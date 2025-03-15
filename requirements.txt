@@ -1,0 +1,11 @@
+google-generativeai
+fastapi
+uvicorn
+python-dotenv
+flask
+firebase-admin
+speechrecognition
+google-cloud-storage
+PyPDF2
+langchain
+langchain-google-genai

@@ -1,3 +1,15 @@
 env/
 venv/
 backend/.env
+backend/firebase-admin-sdk.json
+firebase-admin-sdk.json
+
+venv/
+__pycache__/
+*.pyc
+
+.vscode/
+.idea/
+
+uploads/
+logs/

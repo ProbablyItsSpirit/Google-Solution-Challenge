@@ -10,7 +10,7 @@ def generate():
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
     # Load the model
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     # Generate a response
     response = model.generate_content("")
