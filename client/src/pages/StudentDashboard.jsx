@@ -28,47 +28,77 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tabs,
-  Tab,
   Chip,
   Button,
   TextField,
   LinearProgress,
   useTheme,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
   Assignment,
   Grade,
   History,
-  Analytics,
   Chat,
   Dashboard,
   Logout,
   Menu as MenuIcon,
   Notifications,
-  AttachFile,
   Send,
-  Person,
-  Message,
-  Star,
-  Visibility,
-  CalendarToday,
-  TrendingUp,
   CheckCircle,
   Cancel,
   PendingActions,
+  School,
+  CloudUpload,
+  ArrowBack,
 } from "@mui/icons-material";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+
+// Mock data for classes
+const mockClasses = [
+  {
+    id: "1",
+    name: "Mathematics",
+    teacher: "Dr. Smith",
+    teacherPfp: "https://placekitten.com/100/100",
+    code: "MATH101",
+  },
+  {
+    id: "2",
+    name: "English Literature",
+    teacher: "Ms. Johnson",
+    teacherPfp: "https://placekitten.com/101/101",
+    code: "ENG201",
+  },
+  {
+    id: "3",
+    name: "Chemistry",
+    teacher: "Mr. Rodriguez",
+    teacherPfp: "https://placekitten.com/102/102",
+    code: "CHEM101",
+  },
+  {
+    id: "4",
+    name: "History",
+    teacher: "Dr. Patel",
+    teacherPfp: "https://placekitten.com/103/103",
+    code: "HIST202",
+  },
+];
 
 // Mock data for assignments
 const mockAssignments = [
   {
     id: "1",
     title: "Math Homework 3.2",
-    subject: "Mathematics",
+    classId: "1",
+    className: "Mathematics",
     dueDate: "2025-03-15",
     status: "graded",
     grade: 92,
+    classAverage: 85,
     submittedOn: "2025-03-14",
     gradedOn: "2025-03-17",
     teacherName: "Dr. Smith",
@@ -83,10 +113,12 @@ const mockAssignments = [
   {
     id: "2",
     title: "Literary Analysis Essay",
-    subject: "English",
+    classId: "2",
+    className: "English Literature",
     dueDate: "2025-03-10",
     status: "graded",
     grade: 88,
+    classAverage: 82,
     submittedOn: "2025-03-09",
     gradedOn: "2025-03-12",
     teacherName: "Ms. Johnson",
@@ -102,7 +134,8 @@ const mockAssignments = [
   {
     id: "3",
     title: "Chemistry Lab Report",
-    subject: "Chemistry",
+    classId: "3",
+    className: "Chemistry",
     dueDate: "2025-03-20",
     status: "pending",
     submittedOn: "2025-03-19",
@@ -111,28 +144,12 @@ const mockAssignments = [
   {
     id: "4",
     title: "History Research Paper",
-    subject: "History",
+    classId: "4",
+    className: "History",
     dueDate: "2025-03-25",
     status: "not_submitted",
     feedback: "",
   },
-];
-
-// Mock data for performance analytics
-const performanceData = [
-  { month: 'Jan', grade: 85 },
-  { month: 'Feb', grade: 82 },
-  { month: 'Mar', grade: 88 },
-  { month: 'Apr', grade: 90 },
-  { month: 'May', grade: 92 },
-];
-
-const subjectPerformance = [
-  { subject: 'Math', grade: 92 },
-  { subject: 'English', grade: 88 },
-  { subject: 'Science', grade: 90 },
-  { subject: 'History', grade: 85 },
-  { subject: 'Art', grade: 95 },
 ];
 
 // Mock chat messages
@@ -147,9 +164,12 @@ const StudentDashboard = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(null);
   const [viewMode, setViewMode] = useState("overview");
   const [chatMessages, setChatMessages] = useState(mockMessages);
   const [newMessage, setNewMessage] = useState("");
+  const [fileToUpload, setFileToUpload] = useState(null);
+  const [selectedClassId, setSelectedClassId] = useState("");
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -178,17 +198,24 @@ const StudentDashboard = () => {
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
     setSelectedAssignment(null);
+    setSelectedClass(null);
     setViewMode("overview");
   };
 
   const handleAssignmentSelect = (assignment) => {
     setSelectedAssignment(assignment);
-    setViewMode("detail");
+    setViewMode("assignment");
+  };
+
+  const handleClassSelect = (classItem) => {
+    setSelectedClass(classItem);
+    setViewMode("class");
   };
 
   const handleBackToOverview = () => {
     setViewMode("overview");
     setSelectedAssignment(null);
+    setSelectedClass(null);
   };
 
   const handleSendMessage = () => {
@@ -212,6 +239,21 @@ const StudentDashboard = () => {
         };
         setChatMessages(prev => [...prev, aiResponse]);
       }, 1000);
+    }
+  };
+
+  const handleFileChange = (event) => {
+    setFileToUpload(event.target.files[0]);
+  };
+
+  const handleFileUpload = () => {
+    if (fileToUpload && selectedClassId) {
+      // Simulate file upload
+      alert(`File "${fileToUpload.name}" uploaded to class "${mockClasses.find(c => c.id === selectedClassId).name}"`);
+      setFileToUpload(null);
+      setSelectedClassId("");
+    } else {
+      alert("Please select a file and a class");
     }
   };
 
@@ -275,7 +317,7 @@ const StudentDashboard = () => {
     <Box sx={{ width: 250 }}>
       <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a73e8" }}>
-          GradeGood
+          ClassroomApp
         </Typography>
       </Box>
       <Divider />
@@ -288,21 +330,21 @@ const StudentDashboard = () => {
         </ListItem>
         <ListItem button selected={activeTab === 1} onClick={() => handleTabChange(null, 1)}>
           <ListItemIcon>
+            <School />
+          </ListItemIcon>
+          <ListItemText primary="Classes" />
+        </ListItem>
+        <ListItem button selected={activeTab === 2} onClick={() => handleTabChange(null, 2)}>
+          <ListItemIcon>
             <Assignment />
           </ListItemIcon>
           <ListItemText primary="Assignments" />
         </ListItem>
-        <ListItem button selected={activeTab === 2} onClick={() => handleTabChange(null, 2)}>
+        <ListItem button selected={activeTab === 3} onClick={() => handleTabChange(null, 3)}>
           <ListItemIcon>
             <Grade />
           </ListItemIcon>
           <ListItemText primary="Grades" />
-        </ListItem>
-        <ListItem button selected={activeTab === 3} onClick={() => handleTabChange(null, 3)}>
-          <ListItemIcon>
-            <Analytics />
-          </ListItemIcon>
-          <ListItemText primary="Analytics" />
         </ListItem>
         <ListItem button selected={activeTab === 4} onClick={() => handleTabChange(null, 4)}>
           <ListItemIcon>
@@ -312,9 +354,9 @@ const StudentDashboard = () => {
         </ListItem>
         <ListItem button selected={activeTab === 5} onClick={() => handleTabChange(null, 5)}>
           <ListItemIcon>
-            <History />
+            <CloudUpload />
           </ListItemIcon>
-          <ListItemText primary="History" />
+          <ListItemText primary="Upload Work" />
         </ListItem>
       </List>
       <Divider />
@@ -335,7 +377,7 @@ const StudentDashboard = () => {
     return (
       <Box>
         <Button 
-          startIcon={<Visibility />} 
+          startIcon={<ArrowBack />} 
           variant="text" 
           onClick={handleBackToOverview}
           sx={{ mb: 2 }}
@@ -346,7 +388,7 @@ const StudentDashboard = () => {
         <Card sx={{ mb: 3 }}>
           <CardHeader
             title={selectedAssignment.title}
-            subheader={`${selectedAssignment.subject} • Due: ${new Date(selectedAssignment.dueDate).toLocaleDateString()}`}
+            subheader={`${selectedAssignment.className} • Due: ${new Date(selectedAssignment.dueDate).toLocaleDateString()}`}
             action={getStatusChip(selectedAssignment.status)}
           />
           <CardContent>
@@ -377,6 +419,11 @@ const StudentDashboard = () => {
                     </Typography>
                     <Typography variant="h5" color="text.secondary" sx={{ ml: 1 }}>
                       / 100
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Class Average: {selectedAssignment.classAverage}/100
                     </Typography>
                   </Box>
                 </Grid>
@@ -435,8 +482,133 @@ const StudentDashboard = () => {
     );
   };
 
+  const renderClassDetail = () => {
+    if (!selectedClass) return null;
+
+    const classAssignments = mockAssignments.filter(a => a.classId === selectedClass.id);
+
+    return (
+      <Box>
+        <Button 
+          startIcon={<ArrowBack />} 
+          variant="text" 
+          onClick={handleBackToOverview}
+          sx={{ mb: 2 }}
+        >
+          Back to All Classes
+        </Button>
+        
+        <Card sx={{ mb: 3 }}>
+          <CardHeader
+            avatar={<Avatar src={selectedClass.teacherPfp} />}
+            title={selectedClass.name}
+            subheader={`Teacher: ${selectedClass.teacher} • Class Code: ${selectedClass.code}`}
+          />
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Class Assignments
+            </Typography>
+            
+            <TableContainer component={Paper} variant="outlined">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Due Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Grade</TableCell>
+                    <TableCell>Class Average</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {classAssignments.length > 0 ? (
+                    classAssignments.map((assignment) => (
+                      <TableRow key={assignment.id}>
+                        <TableCell>{assignment.title}</TableCell>
+                        <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{getStatusChip(assignment.status)}</TableCell>
+                        <TableCell>
+                          {assignment.status === "graded" ? `${assignment.grade}/100` : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {assignment.status === "graded" ? `${assignment.classAverage}/100` : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outlined" 
+                            size="small" 
+                            onClick={() => handleAssignmentSelect(assignment)}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">No assignments for this class</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <Box sx={{ mt: 3 }}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => {
+                  setActiveTab(5);
+                  setSelectedClassId(selectedClass.id);
+                }}
+              >
+                Upload Assignment
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  };
+
   const renderDashboardTab = () => (
     <Grid container spacing={3}>
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardHeader title="My Classes" />
+          <CardContent>
+            <List>
+              {mockClasses.slice(0, 3).map((classItem) => (
+                <ListItem 
+                  key={classItem.id} 
+                  button 
+                  onClick={() => handleClassSelect(classItem)}
+                  sx={{ 
+                    mb: 1,
+                    borderRadius: 1,
+                    "&:hover": { bgcolor: "rgba(25, 118, 210, 0.04)" }
+                  }}
+                >
+                  <Avatar src={classItem.teacherPfp} sx={{ mr: 2 }} />
+                  <ListItemText 
+                    primary={classItem.name} 
+                    secondary={`Teacher: ${classItem.teacher}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+            <Button 
+              variant="text" 
+              color="primary" 
+              onClick={() => handleTabChange(null, 1)}
+              sx={{ mt: 1 }}
+            >
+              View All Classes
+            </Button>
+          </CardContent>
+        </Card>
+      </Grid>
       <Grid item xs={12} md={6}>
         <Card>
           <CardHeader title="Recent Assignments" />
@@ -456,7 +628,7 @@ const StudentDashboard = () => {
                 >
                   <ListItemText 
                     primary={assignment.title} 
-                    secondary={`${assignment.subject} • Due: ${new Date(assignment.dueDate).toLocaleDateString()}`}
+                    secondary={`${assignment.className} • Due: ${new Date(assignment.dueDate).toLocaleDateString()}`}
                   />
                   {getStatusChip(assignment.status)}
                 </ListItem>
@@ -465,34 +637,10 @@ const StudentDashboard = () => {
             <Button 
               variant="text" 
               color="primary" 
-              onClick={() => handleTabChange(null, 1)}
+              onClick={() => handleTabChange(null, 2)}
               sx={{ mt: 1 }}
             >
-              View All
-            </Button>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardHeader title="Performance Overview" />
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[60, 100]} />
-                <Tooltip />
-                <Line type="monotone" dataKey="grade" stroke="#1a73e8" activeDot={{ r: 8 }} />
-              </LineChart>
-            </ResponsiveContainer>
-            <Button 
-              variant="text" 
-              color="primary" 
-              onClick={() => handleTabChange(null, 3)}
-              sx={{ mt: 1 }}
-            >
-              View Analytics
+              View All Assignments
             </Button>
           </CardContent>
         </Card>
@@ -506,7 +654,7 @@ const StudentDashboard = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Assignment</TableCell>
-                    <TableCell>Subject</TableCell>
+                    <TableCell>Class</TableCell>
                     <TableCell>Due Date</TableCell>
                     <TableCell>Status</TableCell>
                   </TableRow>
@@ -517,7 +665,7 @@ const StudentDashboard = () => {
                     .map((assignment) => (
                       <TableRow key={assignment.id}>
                         <TableCell>{assignment.title}</TableCell>
-                        <TableCell>{assignment.subject}</TableCell>
+                        <TableCell>{assignment.className}</TableCell>
                         <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
                         <TableCell>{getStatusChip(assignment.status)}</TableCell>
                       </TableRow>
@@ -531,8 +679,60 @@ const StudentDashboard = () => {
     </Grid>
   );
 
+  const renderClassesTab = () => {
+    if (viewMode === "class") {
+      return renderClassDetail();
+    }
+    
+    return (
+      <Box>
+        <Card>
+          <CardHeader title="My Classes" />
+          <CardContent>
+            <Grid container spacing={3}>
+              {mockClasses.map((classItem) => (
+                <Grid item xs={12} sm={6} md={4} key={classItem.id}>
+                  <Card 
+                    variant="outlined" 
+                    sx={{ 
+                      cursor: "pointer",
+                      "&:hover": { boxShadow: 3 }
+                    }}
+                    onClick={() => handleClassSelect(classItem)}
+                  >
+                    <CardHeader
+                      avatar={<Avatar src={classItem.teacherPfp} />}
+                      title={classItem.name}
+                      subheader={`Teacher: ${classItem.teacher}`}
+                    />
+                    <CardContent>
+                      <Typography variant="body2" color="text.secondary">
+                        Class Code: {classItem.code}
+                      </Typography>
+                      <Button 
+                        variant="text" 
+                        color="primary"
+                        sx={{ mt: 1 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClassSelect(classItem);
+                        }}
+                      >
+                        View Class
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  };
+
   const renderAssignmentsTab = () => {
-    if (viewMode === "detail") {
+    if (viewMode === "assignment") {
       return renderAssignmentDetail();
     }
     
@@ -546,10 +746,11 @@ const StudentDashboard = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Title</TableCell>
-                    <TableCell>Subject</TableCell>
+                    <TableCell>Class</TableCell>
                     <TableCell>Due Date</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Grade</TableCell>
+                    <TableCell>Class Average</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -557,11 +758,14 @@ const StudentDashboard = () => {
                   {mockAssignments.map((assignment) => (
                     <TableRow key={assignment.id}>
                       <TableCell>{assignment.title}</TableCell>
-                      <TableCell>{assignment.subject}</TableCell>
+                      <TableCell>{assignment.className}</TableCell>
                       <TableCell>{new Date(assignment.dueDate).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusChip(assignment.status)}</TableCell>
                       <TableCell>
                         {assignment.status === "graded" ? `${assignment.grade}/100` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {assignment.status === "graded" ? `${assignment.classAverage}/100` : "-"}
                       </TableCell>
                       <TableCell>
                         <Button 
@@ -592,11 +796,11 @@ const StudentDashboard = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Subject</TableCell>
+                  <TableCell>Class</TableCell>
                   <TableCell>Assignment</TableCell>
                   <TableCell>Grade</TableCell>
+                  <TableCell>Class Average</TableCell>
                   <TableCell>Date Graded</TableCell>
-                  <TableCell>Teacher</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -605,16 +809,11 @@ const StudentDashboard = () => {
                   .filter(a => a.status === "graded")
                   .map((assignment) => (
                     <TableRow key={assignment.id}>
-                      <TableCell>{assignment.subject}</TableCell>
+                      <TableCell>{assignment.className}</TableCell>
                       <TableCell>{assignment.title}</TableCell>
                       <TableCell>{assignment.grade}/100</TableCell>
+                      <TableCell>{assignment.classAverage}/100</TableCell>
                       <TableCell>{new Date(assignment.gradedOn).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Avatar src={assignment.teacherPfp} sx={{ width: 24, height: 24, mr: 1 }} />
-                          {assignment.teacherName}
-                        </Box>
-                      </TableCell>
                       <TableCell>
                         <Button 
                           variant="outlined" 
@@ -632,80 +831,6 @@ const StudentDashboard = () => {
         </CardContent>
       </Card>
     </Box>
-  );
-
-  const renderAnalyticsTab = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader title="Performance Trend" />
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[60, 100]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="grade" stroke="#1a73e8" strokeWidth={2} activeDot={{ r: 8 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardHeader title="Subject Performance" />
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={subjectPerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" />
-                <YAxis domain={[60, 100]} />
-                <Tooltip />
-                <Bar dataKey="grade" fill="#1a73e8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardHeader title="Improvement Areas" />
-          <CardContent>
-            <List>
-              <ListItem>
-                <ListItemIcon>
-                  <TrendingUp color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Mathematics" 
-                  secondary="Improved by 7% in the last month"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <TrendingUp color="warning" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Literature Analysis" 
-                  secondary="Requires improvement in thesis development"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <TrendingUp color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Science" 
-                  secondary="Consistent performance across assignments"
-                />
-              </ListItem>
-            </List>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
   );
 
   const renderAIAssistantTab = () => (
@@ -769,42 +894,93 @@ const StudentDashboard = () => {
     </Box>
   );
 
-  const renderHistoryTab = () => (
+  const renderUploadTab = () => (
     <Box>
       <Card>
-        <CardHeader title="Assignment History" />
+        <CardHeader title="Upload Assignment" />
+        <CardContent>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="class-select-label">Select Class</InputLabel>
+                <Select
+                  labelId="class-select-label"
+                  value={selectedClassId}
+                  label="Select Class"
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                >
+                  {mockClasses.map((classItem) => (
+                    <MenuItem key={classItem.id} value={classItem.id}>
+                      {classItem.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ border: '1px dashed #ccc', borderRadius: 1, p: 3, textAlign: 'center' }}>
+                <input
+                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                  style={{ display: 'none' }}
+                  id="upload-assignment-file"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="upload-assignment-file">
+                  <Button 
+                    variant="outlined" 
+                    component="span"
+                    startIcon={<CloudUpload />}
+                  >
+                    Select File
+                  </Button>
+                </label>
+                {fileToUpload && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      Selected file: {fileToUpload.name}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleFileUpload}
+                disabled={!fileToUpload || !selectedClassId}
+                fullWidth
+              >
+                Upload Assignment
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+      
+      <Card sx={{ mt: 3 }}>
+        <CardHeader title="Recent Uploads" />
         <CardContent>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Subject</TableCell>
-                  <TableCell>Submitted On</TableCell>
-                  <TableCell>Grade</TableCell>
-                  <TableCell>Teacher</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>Assignment</TableCell>
+                  <TableCell>Class</TableCell>
+                  <TableCell>Uploaded Date</TableCell>
+                  <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {mockAssignments
-                  .filter(a => a.status === "graded")
+                  .filter(a => a.status === "pending" || a.status === "graded")
                   .map((assignment) => (
                     <TableRow key={assignment.id}>
                       <TableCell>{assignment.title}</TableCell>
-                      <TableCell>{assignment.subject}</TableCell>
+                      <TableCell>{assignment.className}</TableCell>
                       <TableCell>{new Date(assignment.submittedOn).toLocaleDateString()}</TableCell>
-                      <TableCell>{assignment.grade}/100</TableCell>
-                      <TableCell>{assignment.teacherName}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          onClick={() => handleAssignmentSelect(assignment)}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
+                      <TableCell>{getStatusChip(assignment.status)}</TableCell>
                     </TableRow>
                   ))}
               </TableBody>
@@ -815,44 +991,28 @@ const StudentDashboard = () => {
     </Box>
   );
 
-  const renderContent = () => {
+  const renderMainContent = () => {
     switch (activeTab) {
       case 0:
         return renderDashboardTab();
       case 1:
-        return renderAssignmentsTab();
+        return renderClassesTab();
       case 2:
-        return renderGradesTab();
+        return renderAssignmentsTab();
       case 3:
-        return renderAnalyticsTab();
+        return renderGradesTab();
       case 4:
         return renderAIAssistantTab();
       case 5:
-        return renderHistoryTab();
+        return renderUploadTab();
       default:
         return renderDashboardTab();
     }
   };
 
-  if (!user) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <Typography>Loading...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: "#fff",
-          color: "text.primary",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-        }}
-      >
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <IconButton
             color="inherit"
@@ -862,83 +1022,306 @@ const StudentDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Avatar src={user.photoURL} sx={{ width: 35, height: 35, mr: 1 }} />
-            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-              {user.displayName}
-            </Typography>
-          </Box>
-          
-          <Box sx={{ flexGrow: 1 }} />
-          
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            GradeGood
+          </Typography>
           <IconButton color="inherit">
-            <Badge badgeContent={3} color="error">
+            <Badge badgeContent={2} color="error">
               <Notifications />
             </Badge>
           </IconButton>
-          
-          <IconButton color="inherit" sx={{ ml: 1 }}>
-            <Message />
-          </IconButton>
+          <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+            <Avatar src={user?.photoURL} sx={{ width: 32, height: 32 }} />
+            <Typography variant="body1" sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
+              {user?.displayName}
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
-      
       <Drawer
         variant="temporary"
         open={drawerOpen}
         onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-        }}
         sx={{
-          display: { xs: "block", sm: "block" },
-          "& .MuiDrawer-paper": { boxSizing: "border-box", width: 250 },
+          width: 250,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
         }}
       >
         {drawer}
       </Drawer>
-      
       <Drawer
         variant="permanent"
         sx={{
-          display: { xs: "none", sm: "none", md: "block" },
           width: 250,
           flexShrink: 0,
-          "& .MuiDrawer-paper": { boxSizing: "border-box", width: 250 },
+          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
+          display: { xs: "none", sm: "block" },
         }}
+        open
       >
-        <Toolbar />
         {drawer}
       </Drawer>
-      
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - 250px)` } }}>
-        <Toolbar />
-        <Container maxWidth="xl">
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              {activeTab === 0 && "Dashboard"}
-              {activeTab === 1 && "Assignments"}
-              {activeTab === 2 && "Grades"}
-              {activeTab === 3 && "Analytics"}
-              {activeTab === 4 && "AI Assistant"}
-              {activeTab === 5 && "History"}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </Typography>
-          </Box>
-          
-          {renderContent()}
-        </Container>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { xs: "100%", sm: `calc(100% - 250px)` },
+          mt: 8,
+        }}
+      >
+        {renderMainContent()}
       </Box>
     </Box>
   );
 };
 
 export default StudentDashboard;
+
+// Add a new component for the submission confirmation dialog
+const SubmissionConfirmationDialog = ({ open, onClose, fileName, className }) => {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Submission Successful</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Your file "{fileName}" has been successfully uploaded to {className}.
+          You will be notified when your submission is graded.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// Add a new component for upcoming assignments
+const UpcomingAssignments = ({ assignments }) => {
+  const sortedAssignments = [...assignments]
+    .filter(a => a.status !== "graded")
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  return (
+    <Card>
+      <CardHeader title="Upcoming Assignments" />
+      <CardContent>
+        <List>
+          {sortedAssignments.map((assignment) => {
+            const dueDate = new Date(assignment.dueDate);
+            const today = new Date();
+            const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+            
+            let severity = "info";
+            if (diffDays <= 1) {
+              severity = "error";
+            } else if (diffDays <= 3) {
+              severity = "warning";
+            }
+            
+            return (
+              <ListItem key={assignment.id}>
+                <ListItemText
+                  primary={assignment.title}
+                  secondary={`${assignment.className} • Due: ${dueDate.toLocaleDateString()}`}
+                />
+                <Chip 
+                  label={diffDays <= 0 ? "Due Today" : `${diffDays} day${diffDays !== 1 ? 's' : ''} left`}
+                  color={severity}
+                  size="small"
+                />
+              </ListItem>
+            );
+          })}
+        </List>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Add a chatbot enhancement for better context understanding
+const enhancedHandleSendMessage = () => {
+  if (newMessage.trim()) {
+    const newMsg = {
+      id: chatMessages.length + 1,
+      sender: "user",
+      message: newMessage,
+      timestamp: new Date().toISOString(),
+    };
+    setChatMessages([...chatMessages, newMsg]);
+    setNewMessage("");
+    
+    // Use context awareness to provide better responses
+    let aiResponse;
+    
+    // Check if message is related to assignments
+    if (newMessage.toLowerCase().includes("assignment") || 
+        newMessage.toLowerCase().includes("homework") ||
+        newMessage.toLowerCase().includes("due")) {
+      
+      // Get upcoming assignments
+      const upcomingAssignments = mockAssignments
+        .filter(a => a.status !== "graded")
+        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      
+      aiResponse = {
+        id: chatMessages.length + 2,
+        sender: "ai",
+        message: `I see you're asking about assignments. You have ${upcomingAssignments.length} upcoming assignments. The most urgent one is "${upcomingAssignments[0].title}" for ${upcomingAssignments[0].className} due on ${new Date(upcomingAssignments[0].dueDate).toLocaleDateString()}. Would you like more details about a specific assignment?`,
+        timestamp: new Date().toISOString(),
+      };
+    } 
+    // Check if message is related to grades
+    else if (newMessage.toLowerCase().includes("grade") || 
+             newMessage.toLowerCase().includes("score") ||
+             newMessage.toLowerCase().includes("mark")) {
+      
+      const gradedAssignments = mockAssignments.filter(a => a.status === "graded");
+      const avgGrade = gradedAssignments.reduce((sum, a) => sum + a.grade, 0) / gradedAssignments.length;
+      
+      aiResponse = {
+        id: chatMessages.length + 2,
+        sender: "ai",
+        message: `You're asking about grades. Your current average grade across all classes is ${avgGrade.toFixed(1)}%. Your highest grade is ${Math.max(...gradedAssignments.map(a => a.grade))}% for "${gradedAssignments.find(a => a.grade === Math.max(...gradedAssignments.map(a => a.grade))).title}". Would you like to know more about a specific class or assignment?`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    // Default response for other queries
+    else {
+      aiResponse = {
+        id: chatMessages.length + 2,
+        sender: "ai",
+        message: "I'm here to help with your studies. I can assist with assignments, grades, or any subject-specific questions. Let me know what you need help with!",
+        timestamp: new Date().toISOString(),
+      };
+    }
+    
+    // Simulate AI response delay
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, aiResponse]);
+    }, 1000);
+  }
+};
+
+// Add a component for class performance analytics
+const ClassPerformanceAnalytics = ({ classes, assignments }) => {
+  // Calculate average grades by class
+  const classPerformance = classes.map(classItem => {
+    const classAssignments = assignments.filter(a => a.classId === classItem.id && a.status === "graded");
+    const avgGrade = classAssignments.length > 0 
+      ? classAssignments.reduce((sum, a) => sum + a.grade, 0) / classAssignments.length 
+      : 0;
+    
+    return {
+      ...classItem,
+      avgGrade,
+      totalAssignments: classAssignments.length
+    };
+  });
+
+  return (
+    <Card>
+      <CardHeader title="Class Performance" />
+      <CardContent>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Class</TableCell>
+                <TableCell>Average Grade</TableCell>
+                <TableCell>Completed Assignments</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {classPerformance.map((classItem) => (
+                <TableRow key={classItem.id}>
+                  <TableCell>{classItem.name}</TableCell>
+                  <TableCell>
+                    {classItem.avgGrade > 0 ? (
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography variant="body2" sx={{ mr: 1 }}>
+                          {classItem.avgGrade.toFixed(1)}%
+                        </Typography>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={classItem.avgGrade} 
+                          sx={{ width: 100, borderRadius: 5 }}
+                        />
+                      </Box>
+                    ) : (
+                      "No grades yet"
+                    )}
+                  </TableCell>
+                  <TableCell>{classItem.totalAssignments}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Add mobile responsiveness improvements
+
+
+// Add notifications component
+const NotificationsMenu = ({ notifications }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  
+  return (
+    <>
+      <IconButton color="inherit" onClick={handleClick}>
+        <Badge badgeContent={notifications.length} color="error">
+          <Notifications />
+        </Badge>
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+            mt: 1.5,
+            width: 320,
+          },
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ p: 2 }}>Notifications</Typography>
+        <Divider />
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <MenuItem key={notification.id} onClick={handleClose}>
+              <ListItemIcon>
+                {notification.type === 'grade' ? <Grade fontSize="small" /> : <Assignment fontSize="small" />}
+              </ListItemIcon>
+              <ListItemText 
+                primary={notification.message} 
+                secondary={new Date(notification.timestamp).toLocaleString()} 
+              />
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem onClick={handleClose}>
+            <ListItemText primary="No new notifications" />
+          </MenuItem>
+        )}
+      </Menu>
+    </>
+  );
+};
