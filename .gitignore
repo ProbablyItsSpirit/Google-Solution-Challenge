@@ -3,7 +3,7 @@ venv/
 backend/.env
 backend/firebase-admin-sdk.json
 firebase-admin-sdk.json
-
+client/node_modules
 venv/
 __pycache__/
 *.pyc
