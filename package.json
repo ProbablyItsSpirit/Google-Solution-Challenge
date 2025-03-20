@@ -1,0 +1,36 @@
+{
+  "name": "gradegood-ai-frontend",
+  "version": "1.0.0",
+  "description": "GradeGood AI Frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config ./client-test/vite.config.ts",
+    "build": "vite build --config ./client-test/vite.config.ts",
+    "preview": "vite preview --config ./client-test/vite.config.ts",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "framer-motion": "^10.16.4",
+    "gradegood-ai-frontend": "file:",
+    "lucide-react": "^0.284.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "@vitejs/plugin-react": "^4.0.4",
+    "autoprefixer": "^10.4.15",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "nodemon": "^3.0.1",
+    "postcss": "^8.4.30",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9"
+  }
+}
