@@ -15,11 +15,12 @@
     "@mui/icons-material": "^6.4.8",
     "@mui/material": "^6.4.8",
     "axios": "^1.8.3",
+    "client": "file:",
     "firebase": "^11.4.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0",
-    "recharts": "^2.15.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "recharts": "^2.10.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
