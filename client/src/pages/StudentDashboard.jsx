@@ -44,6 +44,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  CircularProgress
 } from "@mui/material";
 import {
   Assignment,
@@ -62,6 +63,9 @@ import {
   CloudUpload,
   ArrowBack,
 } from "@mui/icons-material";
+import { getAuth, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const StudentDashboard = () => {
   const [user, setUser] = useState(null);

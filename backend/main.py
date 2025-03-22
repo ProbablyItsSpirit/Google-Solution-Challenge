@@ -1,44 +1,58 @@
 import os
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from routes import router
+from routes import router as api_router
 import firebase_admin
 from firebase_admin import credentials
 from auth import router as auth_router
+import uvicorn
 
-app = FastAPI()
+app = FastAPI(title="GradeGood AI API", version="1.0.0")
 
 # Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY is missing. Please check your .env file.")
+    print("⚠️ GEMINI_API_KEY not found in .env file. Some features may not work.")
 
-# Initialize Firebase Admin only once
+# Fix Firebase credential path - ensure it works on both Windows & Unix systems
 if not firebase_admin._apps:
-    cred = credentials.Certificate("backend/firebase-admin-sdk.json")
-    firebase_admin.initialize_app(cred)
+    try:
+        # Use os.path.join for cross-platform compatibility
+        import os
+        cred_path = os.path.join(os.path.dirname(__file__), "firebase-admin-sdk.json")
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print(f"✅ Firebase initialized successfully with credentials at: {cred_path}")
+    except Exception as e:
+        print(f"❌ Error initializing Firebase: {str(e)}")
+        raise
 
 # Initialize Gemini model
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash-exp")
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    print("✅ Gemini API configured")
+except Exception as e:
+    print(f"❌ Error configuring Gemini API: {str(e)}")
+    model = None
 
-# Enable CORS (for frontend integration)
+# Ensure correct CORS configuration to match your frontend URL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to frontend URL in production
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],  # Add your development URLs
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*", "Authorization", "Content-Type", "id_token", "user_type"],
 )
 
 # Include API Routes
-app.include_router(router)
-app.include_router(auth_router, prefix="/auth")
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(api_router, prefix="/api", tags=["API"])
 
 class UserInput(BaseModel):
     prompt: str
@@ -47,12 +61,23 @@ class AIResponse(BaseModel):
     response: str
 
 @app.get("/")
-async def home():
-    return {"status": "API is running"}
+async def root():
+    return {"message": "Welcome to GradeGood AI API", "status": "running"}
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "firebase": "initialized" if firebase_admin._apps else "not initialized",
+        "gemini": "configured" if model else "not configured"
+    }
 
 @app.post("/generate", response_model=AIResponse)
 async def generate_text(input_data: UserInput):
     """Generate AI response using Gemini API."""
+    if not model:
+        raise HTTPException(status_code=503, detail="Gemini API not configured")
+        
     try:
         response = model.generate_content(
             input_data.prompt,
@@ -66,9 +91,7 @@ async def generate_text(input_data: UserInput):
         return AIResponse(response=response.text)
     except Exception as e:
         print(f"❌ Error generating response: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
