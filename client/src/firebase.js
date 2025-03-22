@@ -1,5 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { 
+  getAuth, 
+  setPersistence, 
+  browserLocalPersistence,
+  browserSessionPersistence,
+  inMemoryPersistence,
+  connectAuthEmulator
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -34,15 +41,46 @@ try {
   console.log("Using existing Firebase app");
 }
 
-// Initialize Firebase servicesge services are initialized
+// Initialize Firebase services
 auth = getAuth(app);
 db = getFirestore(app);
 storage = getStorage(app);
 
-// Add persistence settings to keep users logged in
-setPersistence(auth, browserLocalPersistence)
-  .then(() => console.log("Auth persistence set to LOCAL"))
-  .catch(error => console.error("Auth persistence error:", error));
+// Try to determine if the browser supports persistent storage
+const checkStorageAvailability = () => {
+  try {
+    // Test if localStorage is available
+    localStorage.setItem('test', 'test');
+    localStorage.removeItem('test');
+    return browserLocalPersistence;
+  } catch (e) {
+    // If localStorage fails, try sessionStorage
+    try {
+      sessionStorage.setItem('test', 'test');
+      sessionStorage.removeItem('test');
+      console.log("Using session persistence due to localStorage restrictions");
+      return browserSessionPersistence;
+    } catch (e) {
+      // If both fail, use in-memory
+      console.log("Using in-memory persistence due to storage restrictions");
+      return inMemoryPersistence;
+    }
+  }
+};
+
+// Add persistence settings to keep users logged in when possible
+setPersistence(auth, checkStorageAvailability())
+  .then(() => console.log("Auth persistence set successfully"))
+  .catch(error => {
+    console.error("Auth persistence error:", error);
+    console.log("Falling back to default persistence");
+  });
+
+// For development environments, you could use the emulator
+if (window.location.hostname === "localhost") {
+  // Uncomment the line below to use Firebase emulator
+  // connectAuthEmulator(auth, "http://localhost:9099");
+}
 
 export { auth, db, storage };
 export default app;

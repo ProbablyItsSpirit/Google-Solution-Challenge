@@ -4,7 +4,8 @@ import {
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile // Add this import
+  updateProfile, // Add this import
+  signInWithRedirect
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -251,15 +252,25 @@ const Login = () => {
     try {
       console.log(`Attempting Google sign in as ${role}`);
       const provider = new GoogleAuthProvider();
+      
       // Add scopes for better user data
       provider.addScope('email');
       provider.addScope('profile');
       
-      // Set custom parameters for better UX
+      // Set custom parameters to handle session state issues
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
+        // Fix for missing initial state error
+        state: Buffer.from(`role=${role}&time=${Date.now()}`).toString('base64')
       });
       
+      // Try to use signInWithRedirect on mobile devices (more reliable)
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        await signInWithRedirect(auth, provider);
+        return; // The page will redirect and reload
+      }
+      
+      // Use popup for desktop
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log("Google sign in successful:", user.uid);
@@ -315,7 +326,17 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Google sign in error:", error);
-      setError(handleFirebaseError(error));
+      
+      // Add specific error handling for common Google Sign-In issues
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError("Sign-in popup was closed before completing the process. Please try again.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Sign-in popup was blocked by your browser. Please enable popups and try again.");
+      } else if (error.message && error.message.includes('initial state')) {
+        setError("Browser session storage issue. Please try using incognito mode or clearing cookies.");
+      } else {
+        setError(handleFirebaseError(error));
+      }
     } finally {
       setLoading(false);
     }

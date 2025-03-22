@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 
-// Base URL for all API requests - update this to match your backend URL
-const API_BASE_URL = 'http://localhost:8000';
+// Base URL for all API requests - update for production
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-api-url.com'  // Replace with your deployed backend URL
+  : 'http://localhost:8000';
 
 // Create an axios instance with default config
 const api = axios.create({
