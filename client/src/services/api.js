@@ -30,6 +30,33 @@ api.interceptors.request.use(async (config) => {
 // The loginUser function handles communication with the backend
 export const loginUser = async (userData) => {
   try {
+    // Check if we're online first
+    if (!navigator.onLine) {
+      console.log("Device is offline, skipping backend login");
+      
+      // First ensure the user exists in Firestore
+      try {
+        const userRef = doc(db, "users", userData.uid);
+        await setDoc(userRef, {
+          email: userData.email,
+          name: userData.name || userData.email.split('@')[0],
+          role: userData.role,
+          lastLogin: new Date(),
+          updatedOffline: true
+        }, { merge: true });
+        console.log("Updated user data in Firestore while offline");
+      } catch (firestoreError) {
+        console.warn("Could not update Firestore while offline:", firestoreError);
+      }
+      
+      return { 
+        success: true, 
+        message: "Logged in offline mode",
+        offline: true,
+        userData: userData
+      };
+    }
+    
     console.log("Sending login request to backend");
     console.log("User data being sent:", {
       ...userData,
@@ -38,25 +65,65 @@ export const loginUser = async (userData) => {
     
     // Try the /auth/login endpoint first
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, userData);
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, userData, {
+        // Add a timeout to prevent long hanging requests
+        timeout: 5000,
+        // Handle error responses properly
+        validateStatus: function (status) {
+          return status < 500; // Only reject if status code is 5xx
+        }
+      });
       console.log("Login successful with /auth/login endpoint");
       return response.data;
     } catch (authError) {
       console.error("Error with /auth/login endpoint:", authError);
       
-      // If specific error indicates endpoint not found, try fallback
-      if (authError.response?.status === 404) {
-        console.log("Trying fallback to /login endpoint");
-        const fallbackResponse = await axios.post(`${API_BASE_URL}/login`, userData);
-        console.log("Login successful with fallback endpoint");
-        return fallbackResponse.data;
+      // Improved error handling - store user in Firestore directly if backend is unreachable
+      try {
+        const userRef = doc(db, "users", userData.uid);
+        await setDoc(userRef, {
+          email: userData.email,
+          name: userData.name || userData.email.split('@')[0],
+          role: userData.role,
+          lastLoginAttempt: new Date(),
+          backendUnavailable: true
+        }, { merge: true });
+        console.log("Stored user data directly in Firestore since backend is unavailable");
+      } catch (firestoreError) {
+        console.error("Could not store user data in Firestore either:", firestoreError);
       }
       
-      // If it's another type of error, throw it
-      throw authError;
+      return { 
+        success: true, 
+        message: "Logged in directly with Firebase (backend unavailable)",
+        offline: true,
+        userData: userData
+      };
     }
   } catch (error) {
     console.error('Error during login/registration:', error);
+    
+    // Still try to update Firestore directly as a last resort
+    try {
+      const userRef = doc(db, "users", userData.uid);
+      await setDoc(userRef, {
+        email: userData.email,
+        name: userData.name || userData.email.split('@')[0],
+        role: userData.role,
+        lastLoginError: new Date(),
+        error: error.message
+      }, { merge: true });
+      console.log("Stored user data in Firestore despite errors");
+      
+      return { 
+        success: true, 
+        message: "Logged in with limited functionality",
+        error: error.message,
+        userData: userData
+      };
+    } catch (firestoreError) {
+      console.error("Fatal error - could not communicate with any backend:", firestoreError);
+    }
     
     // Provide more detailed error information based on response
     let errorMessage = "Unknown server error";

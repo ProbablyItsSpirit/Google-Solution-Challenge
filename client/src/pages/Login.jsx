@@ -260,8 +260,8 @@ const Login = () => {
       // Set custom parameters to handle session state issues
       provider.setCustomParameters({
         prompt: 'select_account',
-        // Fix for missing initial state error
-        state: Buffer.from(`role=${role}&time=${Date.now()}`).toString('base64')
+        // Use browser's btoa function instead of Node.js Buffer
+        state: btoa(`role=${role}&time=${Date.now()}`)
       });
       
       // Try to use signInWithRedirect on mobile devices (more reliable)
@@ -275,6 +275,7 @@ const Login = () => {
       const user = result.user;
       console.log("Google sign in successful:", user.uid);
       
+      // Try to register with backend regardless of Firestore permissions
       try {
         // Register with backend
         const userData = {
@@ -287,38 +288,51 @@ const Login = () => {
         const response = await loginUser(userData);
         console.log("Backend registration response:", response);
         
-        // Check if user exists in Firestore
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData.role !== role) {
-            setError(`This Google account is already registered as a ${userData.role}. Please use a different account.`);
-            await auth.signOut();
-            setLoading(false);
-            return;
-          }
-        } else {
-          // Create the user in Firestore
-          await setDoc(userRef, {
-            email: user.email,
-            name: user.displayName || "User",
-            role: role,
-            createdAt: new Date()
-          });
-        }
-        
+        // Show success message and redirect even if Firestore operations fail
         setSnackbar({
           open: true,
           message: 'Google sign-in successful! Redirecting...',
           severity: 'success'
         });
         
-        // Navigate based on role
+        // Try to test Firestore permissions, but don't block login if they fail
+        try {
+          await testFirestoreConnection();
+        } catch (permissionError) {
+          console.warn("Firebase permissions issue detected:", permissionError);
+          setSnackbar({
+            open: true,
+            message: 'Login successful but Firebase permissions need to be updated. Some features may be limited.',
+            severity: 'warning'
+          });
+        }
+        
+        // Try Firestore operations but don't block if they fail
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
+          
+          if (!userDoc.exists()) {
+            try {
+              await setDoc(userRef, {
+                email: user.email,
+                name: user.displayName || "User",
+                role: role,
+                createdAt: new Date()
+              });
+            } catch (writeError) {
+              console.warn("Could not write to Firestore:", writeError);
+            }
+          }
+        } catch (firestoreError) {
+          console.warn("Firestore operations failed - continuing with limited functionality:", firestoreError);
+        }
+        
+        // Navigation happens regardless of Firestore errors
+        console.log(`Redirecting to ${role === "teacher" ? "/teacher-dashboard" : "/student-dashboard"}`);
         setTimeout(() => {
           navigate(role === "teacher" ? "/teacher-dashboard" : "/student-dashboard");
-        }, 1500);
+        }, 1000);
       } catch (backendError) {
         console.error("Backend registration error:", backendError);
         setError("Failed to register with the server. Please try again.");

@@ -3,12 +3,19 @@ from firebase_admin import credentials, auth, firestore
 from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional
+import os
 
 
 # Check if Firebase is already initialized
 if not firebase_admin._apps:
-    cred = credentials.Certificate("backend\\firebase-admin-sdk.json")
-    firebase_admin.initialize_app(cred)
+    try:
+        # Use os.path.join for cross-platform compatibility
+        cred_path = os.path.join(os.path.dirname(__file__), "firebase-admin-sdk.json")
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print(f"✅ Firebase initialized successfully with credentials from auth.py")
+    except Exception as e:
+        print(f"❌ Error initializing Firebase in auth.py: {str(e)}")
 
 # ✅ Firestore DB
 db = firestore.client()

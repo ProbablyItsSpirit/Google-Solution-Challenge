@@ -1,82 +1,116 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { UserProvider } from './contexts/UserContext';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import LoadingPage from './pages/LoadingPage';
+import EnhancedFirebaseRulesGuide from './components/EnhancedFirebaseRulesGuide';
+import { useUser } from './contexts/UserContext';
 
-const ADMIN_EMAIL = "admin@gradegood.com";
-const ADMIN_PASSWORD = "AdminJDC2025";
+// Protected route component with permission checking
+const ProtectedRoute = ({ children, allowedRole }) => {
+  const { currentUser, userRole, loading, hasPermissions } = useUser();
+  
+  if (loading) {
+    return <LoadingPage message="Checking authentication..." />;
+  }
+  
+  if (!currentUser) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // If permissions error, show the rules guide
+  if (!hasPermissions) {
+    return <EnhancedFirebaseRulesGuide />; 
+  }
+  
+  // If an allowed role is specified and doesn't match the user's role
+  if (allowedRole && userRole !== allowedRole) {
+    // Redirect to the appropriate dashboard
+    const redirectPath = userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return children;
+};
 
-const App = () => {
-  useEffect(() => {
-    // Try to create admin account on app initialization
-    const createAdminAccount = async () => {
-      try {
-        // Check if we have network connectivity first
-        if (!navigator.onLine) {
-          console.log("No internet connection. Skipping admin account check.");
-          return;
-        }
-        
-        // First try to sign in - if it works, the account exists
-        try {
-          await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-          console.log("Admin account exists");
-        } catch (error) {
-          // If sign in fails with user-not-found, create the account
-          if (error.code === 'auth/user-not-found') {
-            try {
-              console.log("Creating admin account...");
-              const result = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-              
-              // Set admin user data in Firestore
-              await setDoc(doc(db, "users", result.user.uid), {
-                email: ADMIN_EMAIL,
-                name: "Administrator",
-                role: "teacher",
-                isAdmin: true,
-                createdAt: new Date()
-              });
-              console.log("Admin account created successfully");
-            } catch (createError) {
-              console.error("Error creating admin account:", createError);
-            }
-          } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-            console.log("Admin account exists but credentials may have changed");
-          } else {
-            console.error("Error checking admin account:", error);
-          }
-        }
-      } catch (error) {
-        console.error("Critical error in admin account setup:", error);
-      } finally {
-        // Sign out after checking/creating the admin account
-        try {
-          const currentUser = auth.currentUser;
-          if (currentUser) {
-            await signOut(auth);
-          }
-        } catch (signOutError) {
-          console.error("Error signing out after admin check:", signOutError);
-        }
-      }
-    };
-
-    createAdminAccount();
-  }, []);
-
-  return (
-    <Router>
+// Routes with UserContext
+const AppRoutes = () => {
+  const { currentUser, userRole, loading, hasPermissions } = useUser();
+  
+  if (loading) {
+    return <LoadingPage message="Initializing application..." />;
+  }
+  
+  // If not logged in, or permissions issue with no user, show login page
+  if (!currentUser && !hasPermissions) {
+    return (
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+        <Route path="/rules-guide" element={<EnhancedFirebaseRulesGuide />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Router>
+    );
+  }
+  
+  // If logged in but permissions issue, show rules guide
+  if (currentUser && !hasPermissions) {
+    return (
+      <Routes>
+        <Route path="/" element={<EnhancedFirebaseRulesGuide />} />
+        <Route path="/rules-guide" element={<EnhancedFirebaseRulesGuide />} />
+        <Route path="*" element={<Navigate to="/rules-guide" />} />
+      </Routes>
+    );
+  }
+  
+  // Regular application routing
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          currentUser ? (
+            <Navigate to={`/${userRole === "teacher" ? "teacher" : "student"}-dashboard`} replace />
+          ) : (
+            <Login />
+          )
+        } 
+      />
+      
+      <Route path="/rules-guide" element={<EnhancedFirebaseRulesGuide />} />
+      
+      <Route 
+        path="/teacher-dashboard" 
+        element={
+          <ProtectedRoute allowedRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/student-dashboard" 
+        element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
+const App = () => {
+  return (
+    <UserProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </UserProvider>
   );
 };
 

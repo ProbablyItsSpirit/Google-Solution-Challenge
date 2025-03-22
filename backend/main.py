@@ -41,13 +41,13 @@ except Exception as e:
     print(f"❌ Error configuring Gemini API: {str(e)}")
     model = None
 
-# Ensure correct CORS configuration to match your frontend URL
+# Fix CORS - Allow requests from the React app's domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],  # Add your development URLs
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # React app's domain
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*", "Authorization", "Content-Type", "id_token", "user_type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include API Routes

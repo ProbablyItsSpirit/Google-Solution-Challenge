@@ -7,7 +7,7 @@ import {
   inMemoryPersistence,
   connectAuthEmulator
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your Firebase configuration
@@ -81,6 +81,59 @@ if (window.location.hostname === "localhost") {
   // Uncomment the line below to use Firebase emulator
   // connectAuthEmulator(auth, "http://localhost:9099");
 }
+
+// Enhanced test function with better error handling and clearer descriptive guidance
+export const testFirestoreConnection = async () => {
+  try {
+    // Try a simple write operation to test permissions
+    const testRef = doc(db, "test_collection", "test_document");
+    const timestamp = new Date();
+    await setDoc(testRef, { 
+      timestamp, 
+      message: "Connection test",
+      type: "connection_test"
+    }, { merge: true });
+    console.log("✅ Firestore write permission test successful");
+    return true;
+  } catch (error) {
+    console.error("❌ Firestore permission test failed:", error.message);
+    
+    // More specific error handling based on error message
+    if (error.message.includes("permission")) {
+      console.warn(`
+🔑 IMPORTANT: You need to update your Firestore security rules in the Firebase Console!
+
+Direct links to update rules:
+1. Firestore Rules: https://console.firebase.google.com/project/solutionchallenge-e876c/firestore/rules
+2. Storage Rules: https://console.firebase.google.com/project/solutionchallenge-e876c/storage/rules
+
+For both services, you should set these rules for development:
+- Firestore: allow read, write: if true;
+- Storage: allow read, write: if true;
+
+After publishing the rules, refresh your browser.
+      `);
+    } else if (error.message.includes("network")) {
+      console.warn("Network error detected - please check your internet connection.");
+    } else if (error.message.includes("initialization")) {
+      console.warn("Firebase initialization error - please make sure Firebase is properly configured.");
+    }
+    
+    return false;
+  }
+};
+
+// Run the test when the app initializes, but don't block the app
+// Use a delay to ensure other initialization completes first
+setTimeout(() => {
+  testFirestoreConnection().then(result => {
+    if (result) {
+      console.log("Firebase permissions are set correctly!");
+    } else {
+      console.log("Firebase permissions need to be updated - see instructions above");
+    }
+  });
+}, 2000);
 
 export { auth, db, storage };
 export default app;
