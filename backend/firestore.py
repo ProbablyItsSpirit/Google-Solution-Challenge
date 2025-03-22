@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 
 # ✅ Initialize Firebase Admin (Ensure correct JSON path)
 if not firebase_admin._apps:
-    cred = credentials.Certificate("D:/Programming/Google-Solution-Challenge/backend/firebase-admin-sdk.json")  # Ensure correct path
+    cred = credentials.Certificate("backend/firebase-admin-sdk.json")  # Ensure correct path
     firebase_admin.initialize_app(cred)
 
 # ✅ Initialize Firestore

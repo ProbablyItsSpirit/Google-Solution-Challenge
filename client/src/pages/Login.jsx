@@ -76,6 +76,7 @@ const Login = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
+      console.log(`Google sign-in successful for user: ${user.email}`); // P9d9f
     
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
@@ -99,7 +100,7 @@ const Login = () => {
       
       navigate(role === "teacher" ? "/teacher-dashboard" : "/student-dashboard");
     } catch (error) {
-      console.error(error);
+      console.error(`Google sign-in failed: ${error.message}`); // P9d9f
       setError("Google sign in failed. Please try again.");
     }
   };

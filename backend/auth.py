@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, auth, firestore
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-
+import logging
 
 # Check if Firebase is already initialized
 if not firebase_admin._apps:
@@ -28,11 +28,14 @@ async def login_user(user: User):
     """Handles Google login/signup and stores user info in Firestore."""
 
     try:
+        logging.info(f"Attempting to log in user: {user.email}")
+
         # ✅ Check if user exists in Firestore
         user_ref = db.collection("users").document(user.uid)
         user_doc = user_ref.get()
 
         if user_doc.exists:
+            logging.info(f"User {user.email} exists. Login successful.")
             return {"message": "Login successful!", "user_data": user_doc.to_dict()}
 
         # ✅ New user → Save to Firestore
@@ -45,7 +48,9 @@ async def login_user(user: User):
         }
         user_ref.set(user_data)
 
+        logging.info(f"User {user.email} registered successfully.")
         return {"message": "User registered!", "user_data": user_data}
 
     except Exception as e:
+        logging.error(f"Error logging in user {user.email}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
