@@ -295,7 +295,7 @@ const Login = () => {
           severity: 'success'
         });
         
-        // Try to test Firestore permissions, but don't block login if they fail
+        // Try to test Firestore connection, but don't block login if they fail
         try {
           await testFirestoreConnection();
         } catch (permissionError) {
