@@ -72,7 +72,7 @@ import {
   Settings as SettingsIcon,
   Mic as MicIcon,
 } from "@mui/icons-material"
-import { processChatMessage, uploadFileToBackend } from "../services/api"
+import { processChatMessage, uploadFileToBackend, gradeAnswerPaper } from "../services/api"
 
 // Styled components
 const drawerWidth = 240
@@ -549,7 +549,7 @@ const TeacherDashboard = () => {
     setIsTyping(true)
 
     try {
-      const result = await processChatMessage(chatInput)
+      const result = await processChatMessage(chatInput, userData.uid)
       setMessages((prev) => [
         ...prev,
         {
@@ -599,10 +599,29 @@ const TeacherDashboard = () => {
           return file
         })
 
-        for (const f of e.target.files) {
+        for (const f of renamedFiles) {
           const response = await uploadFileToBackend(f, "general")
           console.log("Upload response:", response)
           setUploadedFiles((prev) => [...prev, f])
+
+          // Trigger grading if an answer paper is uploaded
+          if (fileType === "answer") {
+            try {
+              // Assuming you have assignmentId and other necessary info
+              const gradingResult = await gradeAnswerPaper(f, "assignmentId", userData.uid);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + 2,
+                  content: gradingResult.feedback || "Grading failed",
+                  role: "ai",
+                },
+              ]);
+            } catch (gradingError) {
+              console.error("Grading request failed:", gradingError);
+              showErrorWithTimeout("Failed to initiate grading");
+            }
+          }
         }
         setError(null)
       }

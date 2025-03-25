@@ -411,4 +411,14 @@ async def upload_file(fileType: str = Form(...), file: UploadFile = File(...)):
     # Handle file upload and RAG indexing
     return process_file(file, fileType)
 
+@router.post("/gradeAnswer")
+async def grade_answer(file: UploadFile = File(...), assignment_id: str = Form(...), student_id: str = Form(...)):
+    """Endpoint to trigger grading of an answer paper."""
+    try:
+        # Call the grading service function
+        grading_result = await grade_answer_with_context(file, assignment_id, student_id)
+        return grading_result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 

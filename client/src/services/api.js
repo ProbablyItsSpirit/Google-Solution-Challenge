@@ -309,9 +309,12 @@ export const uploadAudio = async (file, studentId) => {
   }
 };
 
-export const processChatMessage = async (message) => {
+export const processChatMessage = async (message, userId) => {
   try {
-    const response = await api.post("/api/chat", { message });
+    const response = await api.post("/api/chat", {
+      message: message,
+      student_id: userId, // Ensure this matches the backend's expected field name
+    });
     return response.data; // { response: '...' } from backend
   } catch (error) {
     console.error("Error sending chat message:", error);
@@ -330,6 +333,25 @@ export const uploadFileToBackend = async (file, fileType) => {
     return response.data;
   } catch (error) {
     console.error("File upload error:", error);
+    return { error: error.message };
+  }
+};
+
+export const gradeAnswerPaper = async (file, assignmentId, userId) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("assignment_id", assignmentId);
+    formData.append("student_id", userId);
+
+    const response = await api.post("/api/gradeAnswer", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error grading answer paper:", error);
     return { error: error.message };
   }
 };

@@ -523,6 +523,54 @@ def grade_answer_with_context(classroom_id, student_name, roll_no, question_pape
     except Exception as e:
         return {"error": f"Grading failed: {str(e)}"}
 
+async def grade_answer_with_context(file, assignment_id, student_id):
+    """AI grades an answer paper with references."""
+    try:
+        # 1. Extract text from the uploaded answer paper
+        file_bytes = await file.read()
+        student_answers = extract_text_from_file(file_bytes, file.filename)
+
+        # 2. Retrieve the question paper and solution set (assuming they are stored with the assignment ID)
+        question_paper_data = db.collection("question_papers").document(assignment_id).get().to_dict()
+        solution_set_data = db.collection("solutions").document(assignment_id).get().to_dict()
+
+        question_paper = question_paper_data.get("extracted_text", "Question paper not found.") if question_paper_data else "Question paper not found."
+        solution_set = solution_set_data.get("extracted_text", "Solution set not found.") if solution_set_data else "Solution set not found."
+
+        # 3. Get relevant book passages (if available)
+        reference = retrieve_relevant_passages(question_paper, "classroom_id")  # Replace "classroom_id" with actual classroom ID
+
+        # 4. Construct the prompt for Gemini
+        feedback_prompt = f"""
+        You are a teacher grading an exam.
+
+        **Exam Structure**:
+        - The **Question Paper** is: {question_paper}
+        - The **Student's Answer Sheet** is: {student_answers}
+        - The **Solution Set (if provided)** is: {solution_set if solution_set else "Not provided"}
+        - The **Reference from Book** is: {reference.get('text', 'No reference available')} 
+            (Page {reference.get('page_number', 'N/A')})
+
+        **Task**:
+        - Provide an overall assessment of the student's performance.
+        - Highlight **strong areas and weak areas**.
+        - Suggest **how the student can improve**.
+        """
+
+        # 5. Generate feedback using Gemini
+        overall_feedback = model.generate_content(feedback_prompt).text
+
+        # 6. Save feedback to Firestore (optional)
+        doc_ref = db.collection("answer_sheets").document(assignment_id).collection("students").document(student_id)
+        doc_ref.set({
+            "overall_feedback": overall_feedback,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        }, merge=True)
+
+        return {"feedback": overall_feedback}
+    except Exception as e:
+        return {"error": f"Grading failed: {str(e)}"}
+
 ### 📌 Save Results with Book References ###
 def save_graded_response(classroom_id, student_name, roll_no, total_score, overall_feedback, detailed_feedback):
     """Save graded response in Firestore under the correct Classroom and Student."""
