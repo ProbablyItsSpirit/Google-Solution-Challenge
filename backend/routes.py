@@ -5,7 +5,7 @@ import google.generativeai as genai
 from PyPDF2 import PdfReader
 import docx
 from flask import Flask, request, jsonify
-from services import db, upload_file, convert_audio_to_text, register_user, verify_google_token, grade_answer_with_context, save_graded_response
+from services import db, upload_file, convert_audio_to_text, register_user, verify_google_token, grade_answer_with_context, save_graded_response, process_chat, process_file
 from google.cloud import speech, vision, firestore
 import firebase_admin.auth as auth
 from services import (
@@ -400,5 +400,15 @@ async def upload_book(
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/chat")
+async def chat_endpoint(message: str):
+    # Call Gemini-based service logic
+    return process_chat(message)
+
+@router.post("/files")
+async def upload_file(fileType: str = Form(...), file: UploadFile = File(...)):
+    # Handle file upload and RAG indexing
+    return process_file(file, fileType)
 
 

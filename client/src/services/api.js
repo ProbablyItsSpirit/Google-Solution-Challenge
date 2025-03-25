@@ -309,4 +309,29 @@ export const uploadAudio = async (file, studentId) => {
   }
 };
 
+export const processChatMessage = async (message) => {
+  try {
+    const response = await api.post("/api/chat", { message });
+    return response.data; // { response: '...' } from backend
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    return { error: error.message };
+  }
+};
+
+export const uploadFileToBackend = async (file, fileType) => {
+  try {
+    const formData = new FormData();
+    formData.append("fileType", fileType);
+    formData.append("file", file);
+    const response = await api.post("/api/files", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("File upload error:", error);
+    return { error: error.message };
+  }
+};
+
 export default api;

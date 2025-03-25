@@ -1078,9 +1078,11 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     }
   };
 
+  const drawerWidth = 240;
+
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: '#8E33FF' }}>
   <Toolbar>
     <IconButton
       color="inherit"
@@ -1114,9 +1116,8 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
         open={drawerOpen}
         onClose={handleDrawerToggle}
         sx={{
-          width: 250,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
+          width: drawerWidth,
+          '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
         }}
       >
         {drawer}
@@ -1124,10 +1125,9 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       <Drawer
         variant="permanent"
         sx={{
-          width: 250,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
-          display: { xs: "none", sm: "block" },
+          width: drawerWidth,
+          display: { xs: 'none', sm: 'block' },
+          '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
         }}
         open
       >
@@ -1138,7 +1138,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { xs: "100%", sm: `calc(100% - 250px)` },
+          width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
           mt: 8,
         }}
       >

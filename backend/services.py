@@ -534,3 +534,17 @@ def save_graded_response(classroom_id, student_name, roll_no, total_score, overa
         "detailed_feedback": detailed_feedback
     })
     return {"message": "Graded response saved successfully!"}
+
+def process_chat(message: str):
+    # Call Gemini or fallback
+    try:
+        # Replace with actual Gemini usage
+        ai_response = f"Gemini AI response to: {message}"
+        return {"response": ai_response}
+    except Exception as e:
+        return {"error": str(e)}
+
+def process_file(file, file_type):
+    # Placeholder for RAG approach
+    # Save file to storage or process it, then index it
+    return {"message": f"Received {file.filename} as {file_type}"}

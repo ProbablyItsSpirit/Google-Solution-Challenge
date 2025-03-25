@@ -23,14 +23,7 @@ function App() {
   const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [chatHistory] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      text: "Hello! I'm ready to help you grade papers and provide detailed feedback. You can upload papers using the circular buttons below.",
-      sender: 'ai',
-      timestamp: new Date()
-    }
-  ]);
+  const [chatHistory] = useState<ChatMessage[]>([]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -74,9 +67,7 @@ function App() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FileUp className="w-8 h-8 text-[#8E33FF]" />
-            <span className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              GradeGood AI
-            </span>
+            <span className="text-xl font-bold text-[#8E33FF]">GradeGood</span>
           </div>
           <div className="flex items-center space-x-4">
             <button
@@ -227,9 +218,6 @@ function App() {
             <div className="space-y-4">
               <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-[#2A2D31]' : 'bg-gray-100'}`}>
                 <h3 className={`font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Recent Grades</h3>
-                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  No grades yet
-                </div>
               </div>
             </div>
           </motion.div>
