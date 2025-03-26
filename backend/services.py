@@ -224,7 +224,7 @@ def convert_audio_to_text(audio_bytes, file_format):
             f.write(audio_bytes)
 
         # Convert to WAV if not already WAV
-        if file_format.lower() != "wav":
+        if (file_format.lower() != "wav"):
             try:
                 # Try direct FFmpeg conversion if pydub fails
                 try:

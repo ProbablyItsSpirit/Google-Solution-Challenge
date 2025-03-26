@@ -354,7 +354,7 @@ export const gradeAnswerPaper = async (file, assignmentId, userId) => {
     formData.append("assignment_id", assignmentId);
     formData.append("student_id", userId);
 
-    const response = await api.post("/gradeAnswer", formData, { // Corrected route
+    const response = await api.post("/upload/answer_sheet", formData, { // Corrected route
       headers: {
         "Content-Type": "multipart/form-data",
       },

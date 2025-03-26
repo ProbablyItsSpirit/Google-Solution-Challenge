@@ -69,7 +69,7 @@ async def get_user_data(uid: str):
     """Retrieve user data from Firestore."""
     user_ref = db.collection("users").document(uid)
     user_doc = user_ref.get()
-    if user_doc.exists:
+    if (user_doc.exists):
         return user_doc.to_dict()
     raise HTTPException(status_code=404, detail="User not found")
 
@@ -85,7 +85,7 @@ async def upload_question(file: UploadFile = File(...)):
 async def submit_answer(student_id: str, text_answer: str = None, audio_file: UploadFile = File(None)):
     """Submit student answer via text or speech."""
     audio_text = ""
-    if audio_file:
+    if (audio_file):
         audio_text = convert_audio_to_text(audio_file)
 
     answer_data = {
@@ -156,11 +156,11 @@ async def upload_file(file: UploadFile = File(...), file_type: str = Form(...)):
     """Handles file uploads for Question Papers, Student Answer Sheets, and Solution Sets."""
     contents = await file.read()
 
-    if file.filename.endswith(".pdf"):
+    if (file.filename.endswith(".pdf")):
         extracted_text = extract_text_from_pdf(contents)
-    elif file.filename.endswith(".docx"):
+    elif (file.filename.endswith(".docx")):
         extracted_text = extract_text_from_docx(contents)
-    elif file.filename.endswith((".png", ".jpg", ".jpeg")):
+    elif (file.filename.endswith((".png", ".jpg", ".jpeg"))):
         extracted_text = extract_text_from_image(contents)
     else:
         extracted_text = base64.b64encode(contents).decode("utf-8")  # Convert unknown files to Base64
@@ -182,7 +182,7 @@ async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...)
     """
     # Get file extension and validate
     file_extension = file.filename.split(".")[-1].lower()
-    if file_extension not in ["wav", "mp3", "m4a"]:
+    if (file_extension not in ["wav", "mp3", "m4a"]):
         raise HTTPException(
             status_code=400, 
             detail="Unsupported audio format. Supported formats: WAV, MP3, M4A"
@@ -239,11 +239,11 @@ async def upload_answer_sheet(classroom_id: str, student_id: str, file: UploadFi
     contents = await file.read()
 
     # Process file (Extract text)
-    if file.filename.endswith(".pdf"):
+    if (file.filename.endswith(".pdf")):
         extracted_text = extract_text_from_pdf(contents)
-    elif file.filename.endswith(".docx"):
+    elif (file.filename.endswith(".docx")):
         extracted_text = extract_text_from_docx(contents)
-    elif file.filename.endswith((".png", ".jpg", ".jpeg")):
+    elif (file.filename.endswith((".png", ".jpg", ".jpeg"))):
         extracted_text = extract_text_from_image(contents)
     else:
         extracted_text = "Unsupported file format."
@@ -254,7 +254,15 @@ async def upload_answer_sheet(classroom_id: str, student_id: str, file: UploadFi
         "extracted_text": extracted_text
     })
 
-    return {"message": "Answer sheet uploaded!", "file_name": file.filename, "extracted_text": extracted_text[:500]}
+    # Call grade_answer_with_context function
+    grading_result = await grade_answer_with_context(file, assignment_id, student_id)
+
+    # Save grading details in Firestore
+    db.collection("classrooms").document(classroom_id).collection("exams").document("latest_exam").collection("answer_sheets").document(student_id).update({
+        "grading_result": grading_result
+    })
+
+    return {"message": "Answer sheet uploaded and graded!", "file_name": file.filename, "extracted_text": extracted_text[:500], "grading_result": grading_result}
 
 @router.get("/classroom/{classroom_id}/students")
 async def get_students(classroom_id: str):
@@ -315,7 +323,7 @@ async def upload_question_paper(
             category="question_papers",
             assignment_id=assignment_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         return response
     except Exception as e:
@@ -339,7 +347,7 @@ async def upload_solution(
             category="solutions",
             assignment_id=assignment_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         return response
     except Exception as e:
@@ -365,8 +373,17 @@ async def upload_answer_sheet(
             assignment_id=assignment_id,
             student_id=student_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
+
+        # Call grade_answer_with_context function
+        grading_result = await grade_answer_with_context(file, assignment_id, student_id)
+
+        # Save grading details in Firestore
+        db.collection("classrooms").document(classroom_id).collection("exams").document("latest_exam").collection("answer_sheets").document(student_id).update({
+            "grading_result": grading_result
+        })
+
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -389,11 +406,11 @@ async def upload_book(
             category="books"
         )
         
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         
         # If requested, process the book for RAG
-        if process_for_rag and response.get("success"):
+        if (process_for_rag and response.get("success")):
             # You can add RAG processing here
             pass
             
@@ -420,5 +437,3 @@ async def grade_answer(file: UploadFile = File(...), assignment_id: str = Form(.
         return grading_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
