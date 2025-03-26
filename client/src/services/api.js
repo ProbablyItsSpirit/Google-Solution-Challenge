@@ -311,14 +311,24 @@ export const uploadAudio = async (file, studentId) => {
 
 export const processChatMessage = async (message, userId) => {
   try {
+    // Set a reasonable timeout
     const response = await api.post("/api/chat", {
       message: message,
-      student_id: userId, // Ensure this matches the backend's expected field name
+      student_id: userId,
+    }, {
+      timeout: 15000, // 15 seconds timeout
     });
-    return response.data; // { response: '...' } from backend
+    return response.data;
   } catch (error) {
     console.error("Error sending chat message:", error);
-    return { error: error.message };
+    // Improve error handling with more specific errors
+    if (error.code === 'ECONNABORTED') {
+      return { error: "Request timed out. The server took too long to respond." };
+    }
+    if (!navigator.onLine) {
+      return { error: "You are offline. Please check your internet connection." };
+    }
+    return { error: error.message || "Unknown error occurred" };
   }
 };
 
@@ -344,7 +354,7 @@ export const gradeAnswerPaper = async (file, assignmentId, userId) => {
     formData.append("assignment_id", assignmentId);
     formData.append("student_id", userId);
 
-    const response = await api.post("/api/gradeAnswer", formData, {
+    const response = await api.post("/gradeAnswer", formData, { // Corrected route
       headers: {
         "Content-Type": "multipart/form-data",
       },
