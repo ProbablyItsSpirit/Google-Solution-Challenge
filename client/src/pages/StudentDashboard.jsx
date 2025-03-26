@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { getUserData, getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory } from '../services/api';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { getUserData, getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory, processChatMessage, uploadFileToBackend, gradeAnswerPaper } from '../services/api';
 
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  CircularProgress
+  CircularProgress,
+  Tooltip
 } from "@mui/material";
 import {
   Assignment,
@@ -62,10 +63,41 @@ import {
   School,
   CloudUpload,
   ArrowBack,
+  Mic as MicIcon,
+  QuestionAnswer as QuestionIcon,
+  Description as DescriptionIcon,
 } from "@mui/icons-material";
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+
+// Styled components
+const PulseCircle = styled(Box)(({ theme }) => ({
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  backgroundColor: theme.palette.error.main,
+  opacity: 0.6,
+  animation: "pulse 1.5s infinite",
+  "@keyframes pulse": {
+    "0%": {
+      transform: "translate(-50%, -50%) scale(0.95)",
+      opacity: 0.6,
+    },
+    "70%": {
+      transform: "translate(-50%, -50%) scale(1.1)",
+      opacity: 0.3,
+    },
+    "100%": {
+      transform: "translate(-50%, -50%) scale(0.95)",
+      opacity: 0.6,
+    },
+  },
+}));
 
 const StudentDashboard = () => {
   const [user, setUser] = useState(null);
@@ -76,8 +108,6 @@ const StudentDashboard = () => {
 const [uploadsLoading, setUploadsLoading] = useState(false);
 const [uploadsError, setUploadsError] = useState(null);
 const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-
-
 
   const [selectedClass, setSelectedClass] = useState(null);
 
@@ -96,6 +126,72 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [aiResponding, setAiResponding] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
+  const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState(null);
+  const recognitionRef = useRef(null);
+  const [interimTranscript, setInterimTranscript] = useState("");
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event) => {
+        let interimText = "";
+        let finalText = newMessage;
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalText += event.results[i][0].transcript + " ";
+          } else {
+            interimText += event.results[i][0].transcript;
+          }
+        }
+
+        setNewMessage(finalText);
+        setInterimTranscript(interimText);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        setSpeechError(`Error: ${event.error}`);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+        setInterimTranscript("");
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleSpeechRecognition = () => {
+    if (!recognitionRef.current) {
+      showErrorWithTimeout("Speech recognition is not supported in your browser");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      setInterimTranscript("");
+    } else {
+      setSpeechError(null);
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   // Load user data and fetch all required data
   useEffect(() => {
@@ -876,6 +972,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       </Card>
     </Box>
   );
+
   const renderAIAssistantTab = () => (
     <Box sx={{ height: "calc(100vh - 180px)", display: "flex", flexDirection: "column" }}>
       <Card sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
@@ -931,6 +1028,25 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
               }}
               sx={{ mr: 1 }}
             />
+            <Tooltip title={isListening ? "Stop listening" : "Speech to text"}>
+              <Box sx={{ position: "relative", ml: 1 }}>
+                <IconButton
+                  color={isListening ? "error" : "primary"}
+                  onClick={toggleSpeechRecognition}
+                  sx={{
+                    position: "relative",
+                    zIndex: 2,
+                    bgcolor: isListening ? "rgba(211, 47, 47, 0.1)" : "transparent",
+                    "&:hover": {
+                      bgcolor: isListening ? "rgba(211, 47, 47, 0.2)" : "rgba(25, 118, 210, 0.1)",
+                    },
+                  }}
+                >
+                  {isListening ? <MicIcon /> : <MicIcon />}
+                </IconButton>
+                {isListening && <PulseCircle />}
+              </Box>
+            </Tooltip>
             <Button 
               variant="contained" 
               color="primary" 

@@ -72,6 +72,7 @@ import {
   Settings as SettingsIcon,
   Mic as MicIcon,
 } from "@mui/icons-material"
+import { processChatMessage, uploadFileToBackend, gradeAnswerPaper } from "../services/api"
 
 // Styled components
 const drawerWidth = 240
@@ -522,12 +523,9 @@ const TeacherDashboard = () => {
     return true
   }
 
-  const handleChatSubmit = (e) => {
+  const handleChatSubmit = async (e) => {
     e.preventDefault()
-
-    if (!validateChatInput()) {
-      return
-    }
+    if (!validateChatInput()) return
 
     // Stop speech recognition if it's active
     if (isListening && recognitionRef.current) {
@@ -550,59 +548,24 @@ const TeacherDashboard = () => {
     // Simulate AI response with proper loading state
     setIsTyping(true)
 
-    // Use a more realistic delay based on message length and files
-    const responseDelay = Math.min(1000 + chatInput.length / 10 + uploadedFiles.length * 500, 5000)
-
-    setTimeout(() => {
-      try {
-        const aiResponse = {
+    try {
+      const result = await processChatMessage(chatInput, userData.uid)
+      setMessages((prev) => [
+        ...prev,
+        {
           id: Date.now() + 1,
-          content: getAIResponse(chatInput, uploadedFiles),
-          role: "assistant",
-        }
-        setMessages((prev) => [...prev, aiResponse])
-        saveChatHistory(userMessage, aiResponse)
-      } catch (error) {
-        console.error("Error generating AI response:", error)
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            content: "I'm sorry, I encountered an error processing your request. Please try again.",
-            role: "assistant",
-            isError: true,
-          },
-        ])
-      } finally {
-        setIsTyping(false)
-      }
-    }, responseDelay)
+          content: result.response || "Error from AI",
+          role: "ai",
+        },
+      ])
+    } catch (err) {
+      console.error("Chat request failed:", err)
+    } finally {
+      setIsTyping(false)
+    }
   }
 
-  const getAIResponse = (input, files) => {
-    if (files.length > 0) {
-      if (files.some((f) => f.name.toLowerCase().includes("question"))) {
-        return "I've analyzed the question paper. It contains 5 multiple choice questions and 3 essay questions. Would you like me to suggest a grading rubric?"
-      } else if (files.some((f) => f.name.toLowerCase().includes("answer"))) {
-        return "I've reviewed the answer sheets. Based on my analysis, the average score is 78%. Would you like a detailed breakdown of common mistakes?"
-      } else if (files.some((f) => f.name.toLowerCase().includes("solution"))) {
-        return "I've processed the solution paper. It's well-structured and covers all the key points. Would you like me to compare it with student answers?"
-      }
-      return "I've received your files and processed them. How would you like me to help with these documents?"
-    }
-
-    if (input.toLowerCase().includes("grade") || input.toLowerCase().includes("assess")) {
-      return "I can help you grade papers. Upload student submissions, and I'll analyze them based on your rubric or solution key."
-    } else if (input.toLowerCase().includes("quiz") || input.toLowerCase().includes("test")) {
-      return "I can help you create quizzes or tests. What subject and difficulty level are you looking for?"
-    } else if (input.toLowerCase().includes("analyze") || input.toLowerCase().includes("performance")) {
-      return "I can analyze student performance data. Upload assessment results, and I'll provide insights on strengths, weaknesses, and improvement areas."
-    }
-
-    return "I'm your AI teaching assistant. I can help with grading, creating educational content, analyzing student performance, and more. How can I assist you today?"
-  }
-
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     try {
       if (e.target.files && e.target.files.length > 0) {
         const newFiles = Array.from(e.target.files)
@@ -636,7 +599,30 @@ const TeacherDashboard = () => {
           return file
         })
 
-        setUploadedFiles((prev) => [...prev, ...renamedFiles])
+        for (const f of renamedFiles) {
+          const response = await uploadFileToBackend(f, "general")
+          console.log("Upload response:", response)
+          setUploadedFiles((prev) => [...prev, f])
+
+          // Trigger grading if an answer paper is uploaded
+          if (fileType === "answer") {
+            try {
+              // Assuming you have assignmentId and other necessary info
+              const gradingResult = await gradeAnswerPaper(f, "assignmentId", userData.uid);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + 2,
+                  content: gradingResult.feedback || "Grading failed",
+                  role: "ai",
+                },
+              ]);
+            } catch (gradingError) {
+              console.error("Grading request failed:", gradingError);
+              showErrorWithTimeout("Failed to initiate grading");
+            }
+          }
+        }
         setError(null)
       }
     } catch (error) {
@@ -645,11 +631,12 @@ const TeacherDashboard = () => {
     }
   }
 
-  const handleSpecificFileUpload = (type) => {
+  const handleSpecificFileUpload = async (type) => {
     if (fileInputRef.current) {
       // Set a data attribute to track which button was clicked
       fileInputRef.current.setAttribute("data-file-type", type)
       fileInputRef.current.click()
+      // In the 'onChange' we can pass 'type' to uploadFileToBackend if needed
     }
   }
 
