@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { getUserData, getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory, processChatMessage, uploadFileToBackend, gradeAnswerPaper } from '../services/api';
+"use client"
 
-import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react"
+import { styled } from "@mui/material/styles"
 import {
   Box,
-  ListItemButton,
-  Container,
   Typography,
-  Grid,
+  Button,
+  Container,
   Paper,
+  CircularProgress,
+  ListItemButton,
+  Grid,
   Avatar,
   Drawer,
   List,
@@ -31,7 +32,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Button,
   TextField,
   LinearProgress,
   useTheme,
@@ -44,7 +44,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  CircularProgress,
   Tooltip
 } from "@mui/material";
 import {
@@ -70,6 +69,10 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getUserData, getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory, processChatMessage, uploadFileToBackend, gradeAnswerPaper } from '../services/api';
+
+import { auth } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 // Styled components
 const PulseCircle = styled(Box)(({ theme }) => ({

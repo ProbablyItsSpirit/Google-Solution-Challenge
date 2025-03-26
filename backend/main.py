@@ -10,6 +10,7 @@ import firebase_admin
 from firebase_admin import credentials
 from auth import router as auth_router
 import uvicorn
+from config import HOST, PORT
 
 app = FastAPI(title="GradeGood AI API", version="1.0.0")
 
@@ -94,4 +95,5 @@ async def generate_text(input_data: UserInput):
         raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    print(f"Starting server on port {PORT}")
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
