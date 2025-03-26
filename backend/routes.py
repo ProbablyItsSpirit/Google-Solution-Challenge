@@ -380,7 +380,7 @@ async def upload_answer_sheet(
         grading_result = await grade_answer_with_context(file, assignment_id, student_id)
 
         # Save grading details in Firestore
-        db.collection("classrooms").document(classroom_id).collection("exams").document("latest_exam").collection("answer_sheets").document(student_id).update({
+        db.collection("answer_sheets").document(file.filename).update({
             "grading_result": grading_result
         })
 
