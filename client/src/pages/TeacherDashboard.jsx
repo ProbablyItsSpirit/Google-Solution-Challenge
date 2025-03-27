@@ -73,6 +73,7 @@ import {
   Mic as MicIcon,
 } from "@mui/icons-material"
 import { processChatMessage, uploadFileToBackend, gradeAnswerPaper } from "../services/api"
+import SimpleFeedbackRenderer from "../components/SimpleFeedbackRenderer"
 
 // Styled components
 const drawerWidth = 240
@@ -84,7 +85,10 @@ const Main = styled("main")(({ theme }) => ({
   marginTop: theme.spacing(8), // Adjusted spacing since we removed the tabs
 }))
 
-const MessageBubble = styled(Box)(({ theme, isUser }) => ({
+// Update the MessageBubble styled component to filter out isUser prop
+const MessageBubble = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'isUser'
+})(({ theme, isUser }) => ({
   maxWidth: "80%",
   padding: theme.spacing(1.5),
   borderRadius: theme.spacing(2),
@@ -161,38 +165,6 @@ const SummaryCard = ({ title, value, subtitle, icon }) => (
   </Card>
 )
 
-// Chat Message Component
-const ChatMessage = ({ message, userData, getFileIcon, getFileType }) => (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: message.role === "user" ? "flex-end" : "flex-start",
-      mb: 2,
-    }}
-  >
-    {message.role !== "user" && <Avatar sx={{ mr: 1, bgcolor: "primary.main" }}>AI</Avatar>}
-    <MessageBubble isUser={message.role === "user"}>
-      {message.content}
-      {message.files && message.files.length > 0 && (
-        <Box sx={{ mt: 1 }}>
-          {message.files.map((file, index) => (
-            <FileChip key={index}>
-              {getFileIcon(file.name)}
-              <Typography variant="caption" sx={{ ml: 0.5, mr: 0.5 }}>
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                ({getFileType(file.name)})
-              </Typography>
-            </FileChip>
-          ))}
-        </Box>
-      )}
-    </MessageBubble>
-    {message.role === "user" && <Avatar sx={{ ml: 1 }}>{userData?.name?.charAt(0) || "U"}</Avatar>}
-  </Box>
-)
-
 // Empty State Component
 const EmptyState = ({ icon, title, description, actionButton }) => (
   <Box sx={{ textAlign: "center", p: 3 }}>
@@ -237,6 +209,11 @@ const TeacherDashboard = () => {
   const recognitionRef = useRef(null)
   const [interimTranscript, setInterimTranscript] = useState("")
 
+  // Log a message about the fallback renderer
+  useEffect(() => {
+    console.warn("Using SimpleFeedbackRenderer - to use advanced formatting, run install-dependencies.bat");
+  }, []);
+
   // Initialize speech recognition
   useEffect(() => {
     if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
@@ -280,23 +257,6 @@ const TeacherDashboard = () => {
     }
   }, [])
 
-  const toggleSpeechRecognition = () => {
-    if (!recognitionRef.current) {
-      showErrorWithTimeout("Speech recognition is not supported in your browser")
-      return
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop()
-      setIsListening(false)
-      setInterimTranscript("")
-    } else {
-      setSpeechError(null)
-      recognitionRef.current.start()
-      setIsListening(true)
-    }
-  }
-
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => setIsOffline(false)
@@ -316,12 +276,12 @@ const TeacherDashboard = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
+      console.log("TeacherDashboard: Fetching user data...")
       try {
-        console.log("TeacherDashboard: Fetching user data...")
         const user = auth.currentUser
-
         if (!user) {
           console.log("TeacherDashboard: No current user found, redirecting to login")
           navigate("/")
@@ -333,7 +293,6 @@ const TeacherDashboard = () => {
         // Test Firestore permissions first
         try {
           const hasPermissions = await testFirestoreConnection()
-
           if (!hasPermissions) {
             console.log("TeacherDashboard: Firestore permission test failed")
             setUserData({
@@ -373,7 +332,6 @@ const TeacherDashboard = () => {
         try {
           const userRef = doc(db, "users", user.uid)
           console.log(`TeacherDashboard: Fetching document from path: ${userRef.path}`)
-
           const userDoc = await getDoc(userRef)
 
           if (userDoc.exists()) {
@@ -394,7 +352,6 @@ const TeacherDashboard = () => {
           fetchData(user.uid)
         } catch (firestoreError) {
           console.error("TeacherDashboard: Firestore error:", firestoreError)
-
           // Handle offline errors gracefully
           if (firestoreError.message?.includes("offline")) {
             setUserData({
@@ -418,6 +375,60 @@ const TeacherDashboard = () => {
 
     fetchUserData()
   }, [auth, navigate, isOffline])
+
+  // Chat Message Component - Update to use SimpleFeedbackRenderer
+  const ChatMessage = ({ message, userData, getFileIcon, getFileType }) => (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: message.role === "user" ? "flex-end" : "flex-start",
+        mb: 2,
+      }}
+    >
+      {message.role !== "user" && <Avatar sx={{ mr: 1, bgcolor: "primary.main" }}>AI</Avatar>}
+      <MessageBubble isUser={message.role === "user"}>
+        {message.role === "ai" ? (
+          <SimpleFeedbackRenderer content={message.content} />
+        ) : (
+          message.content
+        )}
+        {message.files && message.files.length > 0 && (
+          <Box sx={{ mt: 1 }}>
+            {message.files.map((file, index) => (
+              <FileChip key={index}>
+                {getFileIcon(file.name)}
+                <Typography variant="caption" sx={{ ml: 0.5, mr: 0.5 }}>
+                  {file.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({getFileType(file.name)})
+                </Typography>
+              </FileChip>
+            ))}
+          </Box>
+        )}
+      </MessageBubble>
+      {message.role === "user" && <Avatar sx={{ ml: 1 }}>{userData?.name?.charAt(0) || "U"}</Avatar>}
+    </Box>
+  )
+
+  const toggleSpeechRecognition = () => {
+    if (!recognitionRef.current) {
+      showErrorWithTimeout("Speech recognition is not supported in your browser")
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+      setInterimTranscript("")
+      setSpeechError(null)
+    } else {
+      setSpeechError(null)
+      recognitionRef.current.start()
+      setIsListening(true)
+    }
+  }
 
   const fetchData = async (userId) => {
     try {
@@ -547,7 +558,6 @@ const TeacherDashboard = () => {
 
     // Simulate AI response with proper loading state
     setIsTyping(true)
-
     try {
       const result = await processChatMessage(chatInput, userData.uid)
       setMessages((prev) => [
@@ -599,28 +609,81 @@ const TeacherDashboard = () => {
           return file
         })
 
-        for (const f of renamedFiles) {
-          const response = await uploadFileToBackend(f, "general")
-          console.log("Upload response:", response)
-          setUploadedFiles((prev) => [...prev, f])
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            content: `Uploading ${renamedFiles.map(f => f.name).join(", ")}...`,
+            role: "system",
+          },
+        ])
 
-          // Trigger grading if an answer paper is uploaded
-          if (fileType === "answer") {
-            try {
-              // Assuming you have assignmentId and other necessary info
-              const gradingResult = await gradeAnswerPaper(f, "assignmentId", userData.uid);
+        for (const f of renamedFiles) {
+          try {
+            // First upload the file to the server
+            const response = await uploadFileToBackend(f, fileType || "general")
+            console.log("Upload response:", response)
+            setUploadedFiles((prev) => [...prev, f])
+
+            // Specifically handle answer papers for grading
+            if (fileType === "answer" || f.name.toLowerCase().includes("answer")) {
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: Date.now() + 2,
-                  content: gradingResult.feedback || "Grading failed",
-                  role: "ai",
+                  id: Date.now() + 1,
+                  content: `Grading ${f.name}...`,
+                  role: "system",
                 },
-              ]);
-            } catch (gradingError) {
-              console.error("Grading request failed:", gradingError);
-              showErrorWithTimeout("Failed to initiate grading");
+              ])
+
+              try {
+                // Using a reasonable assignment ID
+                const gradingResult = await gradeAnswerPaper(f, "default_assignment", userData.uid)
+                if (gradingResult.feedback) {
+                  // Format the feedback as markdown if it isn't already
+                  let formattedFeedback = gradingResult.feedback;
+                  // Check if feedback already has markdown formatting
+                  if (!formattedFeedback.includes('#') && !formattedFeedback.includes('*')) {
+                    // Add basic markdown formatting if none exists
+                    formattedFeedback = formattedFeedback
+                      .replace(/(\d+)\.\s+([A-Z][^:]+):/g, '## $1. $2:')  // Convert "1. Title:" to "## 1. Title:"
+                      .replace(/\*\*([^*]+)\*\*/g, '**$1**')              // Keep existing bold text
+                      .replace(/([A-Z][^:]+):/g, '**$1:**');              // Make other titles bold
+                  }
+                  
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: Date.now() + 2,
+                      content: formattedFeedback,
+                      role: "ai",
+                    },
+                  ])
+                } else if (gradingResult.error) {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: Date.now() + 2,
+                      content: `Error grading: ${gradingResult.error}`,
+                      role: "system",
+                    },
+                  ])
+                }
+              } catch (gradingError) {
+                console.error("Grading request failed:", gradingError)
+                showErrorWithTimeout("Failed to initiate grading")
+              }
             }
+          } catch (fileError) {
+            console.error("Error processing file:", fileError)
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now() + 3,
+                content: `Error processing ${f.name}: ${fileError.message || "Unknown error"}`,
+                role: "system",
+              },
+            ])
           }
         }
         setError(null)
@@ -736,113 +799,6 @@ const TeacherDashboard = () => {
   const pendingAssignments = useMemo(() => {
     return recentGrades.filter((g) => g.submissions < g.total).length
   }, [recentGrades])
-
-  if (showPermissionGuide) {
-    return <FirebaseRulesGuide onClose={() => setShowPermissionGuide(false)} />
-  }
-
-  if (userData?.permissionError) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          <Typography variant="h4" color="error" gutterBottom>
-            Firebase Security Rules Error
-          </Typography>
-
-          <Alert severity="error" sx={{ mb: 3 }}>
-            Missing or insufficient permissions to access Firestore
-          </Alert>
-
-          <Typography variant="h6" gutterBottom>
-            Please update your Firestore security rules:
-          </Typography>
-
-          <ol>
-            <li>
-              <Typography paragraph>
-                Go to{" "}
-                <Link
-                  href="https://console.firebase.google.com/project/solutionchallenge-e876c/firestore/rules"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Firebase Firestore Rules
-                </Link>
-              </Typography>
-            </li>
-            <li>
-              <Typography paragraph>Replace the current rules with:</Typography>
-              <Paper sx={{ bgcolor: "#f5f5f5", p: 2, my: 2, fontFamily: "monospace", fontSize: "0.9rem" }}>
-                rules_version = '2';
-                <br />
-                service cloud.firestore {"{"}
-                <br />
-                &nbsp;&nbsp;match /databases/{"{"}database{"}"}/documents {"{"}
-                <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;match /{"{"}document=**{"}"} {"{"}
-                <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;
-                <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;{"}"}
-                <br />
-                &nbsp;&nbsp;{"}"}
-                <br />
-                {"}"}
-              </Paper>
-            </li>
-            <li>
-              <Typography paragraph>Click "Publish"</Typography>
-            </li>
-            <li>
-              <Typography paragraph>
-                Then go to{" "}
-                <Link
-                  href="https://console.firebase.google.com/project/solutionchallenge-e876c/storage/rules"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Firebase Storage Rules
-                </Link>{" "}
-                and do the same for Storage rules
-              </Typography>
-            </li>
-            <li>
-              <Typography paragraph>After updating the rules, refresh this page</Typography>
-            </li>
-          </ol>
-
-          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
-            <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
-              Refresh Page
-            </Button>
-
-            <Button variant="outlined" color="secondary" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Box>
-        </Paper>
-      </Container>
-    )
-  }
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress sx={{ mb: 3 }} />
-        <Typography variant="body1" color="text.secondary">
-          Loading teacher dashboard...
-        </Typography>
-      </Box>
-    )
-  }
 
   const renderAIAssistantView = () => (
     <Box sx={{ height: "calc(100vh - 120px)", display: "flex", flexDirection: "column" }}>
@@ -1036,6 +992,7 @@ const TeacherDashboard = () => {
               <SendIcon />
             </Button>
           </Box>
+
           {inputError && (
             <Typography variant="caption" color="error" sx={{ mt: 1 }}>
               {inputError}
@@ -1064,7 +1021,6 @@ const TeacherDashboard = () => {
               <Typography variant="h6" gutterBottom>
                 Class Roster
               </Typography>
-
               <TableContainer component={Paper} variant="outlined">
                 <Table>
                   <TableHead>
@@ -1123,7 +1079,6 @@ const TeacherDashboard = () => {
               <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
                 Class Assignments
               </Typography>
-
               <TableContainer component={Paper} variant="outlined">
                 <Table>
                   <TableHead>
@@ -1436,6 +1391,108 @@ const TeacherDashboard = () => {
     }
   }
 
+  if (showPermissionGuide) {
+    return <FirebaseRulesGuide onClose={() => setShowPermissionGuide(false)} />
+  }
+
+  if (userData?.permissionError) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+          <Typography variant="h4" color="error" gutterBottom>
+            Firebase Security Rules Error
+          </Typography>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            Missing or insufficient permissions to access Firestore
+          </Alert>
+          <Typography variant="h6" gutterBottom>
+            Please update your Firestore security rules:
+          </Typography>
+          <ol>
+            <li>
+              <Typography paragraph>
+                Go to{" "}
+                <Link
+                  href="https://console.firebase.google.com/project/solutionchallenge-e876c/firestore/rules"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Firebase Firestore Rules
+                </Link>
+              </Typography>
+            </li>
+            <li>
+              <Typography paragraph>Replace the current rules with:</Typography>
+              <Paper sx={{ bgcolor: "#f5f5f5", p: 2, my: 2, fontFamily: "monospace", fontSize: "0.9rem" }}>
+                rules_version = '2';
+                <br />
+                service cloud.firestore { "{" }
+                <br />
+                &nbsp;&nbsp;match /databases/{ "{" }database{ "}" }/documents { "{" }
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;match /{ "{" }document=**{ "}" } { "{" }
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;{ "}" }
+                <br />
+                &nbsp;&nbsp;{ "}" }
+                <br />
+                { "}" }
+              </Paper>
+            </li>
+            <li>
+              <Typography paragraph>Click "Publish"</Typography>
+            </li>
+            <li>
+              <Typography paragraph>
+                Then go to{" "}
+                <Link
+                  href="https://console.firebase.google.com/project/solutionchallenge-e876c/storage/rules"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Firebase Storage Rules
+                </Link>{" "}
+                and do the same for Storage rules
+              </Typography>
+            </li>
+            <li>
+              <Typography paragraph>After updating the rules, refresh this page</Typography>
+            </li>
+          </ol>
+          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
+            <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+            <Button variant="outlined" color="secondary" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress sx={{ mb: 3 }} />
+        <Typography variant="body1" color="text.secondary">
+          Loading teacher dashboard...
+        </Typography>
+      </Box>
+    )
+  }
+
   return (
     <Box sx={{ display: "flex" }}>
       {/* App Bar */}
@@ -1601,7 +1658,7 @@ const TeacherDashboard = () => {
   )
 }
 
-// ChipComponent for Material UI compatibility
+// Helper components
 function ChipComponent({ label, color }) {
   const getColor = () => {
     switch (color) {

@@ -51,9 +51,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API Routes
+# Include API Routes - IMPORTANT FIX: Include all routes from the router directly
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-app.include_router(api_router, prefix="/api", tags=["API"])
+app.include_router(api_router)  # Register without prefix to allow proper route handling
 
 class UserInput(BaseModel):
     prompt: str

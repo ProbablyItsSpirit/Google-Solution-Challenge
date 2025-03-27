@@ -224,7 +224,7 @@ def convert_audio_to_text(audio_bytes, file_format):
             f.write(audio_bytes)
 
         # Convert to WAV if not already WAV
-        if file_format.lower() != "wav":
+        if (file_format.lower() != "wav"):
             try:
                 # Try direct FFmpeg conversion if pydub fails
                 try:
@@ -540,7 +540,7 @@ async def grade_answer_with_context(file, assignment_id, student_id):
         # 3. Get relevant book passages (if available)
         reference = retrieve_relevant_passages(question_paper, "classroom_id")  # Replace "classroom_id" with actual classroom ID
 
-        # 4. Construct the prompt for Gemini
+        # 4. Construct the prompt for Gemini - Request markdown formatting
         feedback_prompt = f"""
         You are a teacher grading an exam.
 
@@ -554,7 +554,16 @@ async def grade_answer_with_context(file, assignment_id, student_id):
         **Task**:
         - Provide an overall assessment of the student's performance.
         - Highlight **strong areas and weak areas**.
-        - Suggest **how the student can improve**.
+        - Suggest **how the student can improve**
+        
+        Format your response in markdown with proper headings (## for main sections),
+        bullet points for lists, and code blocks (``` code ```) for code examples.
+        Structure your response with these sections:
+        ## 1. Overall Grade: (Give a score out of 100)
+        ## 2. Strengths:
+        ## 3. Weaknesses:
+        ## 4. Detailed Feedback on Sections:
+        ## 5. Suggestions for Improvement:
         """
 
         # 5. Generate feedback using Gemini

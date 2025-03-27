@@ -1,0 +1,155 @@
+Future Implementations
+✅ 1. Improved RAG (Retrieval-Augmented Generation)
+
+Smarter Answer Matching:
+
+Enhance the RAG pipeline with vector similarity search using FAISS or Pinecone.
+
+More accurate retrieval of answers from large solution sets or books.
+
+Context-Aware Grading:
+
+The AI will reference past grading patterns to ensure consistent evaluation.
+
+Example: If students frequently make the same mistake, AI will highlight it as a common issue.
+
+Multiple Book Support:
+
+Allow teachers to upload multiple books or reference materials.
+
+AI will automatically select the most relevant source for each question.
+
+✅ 2. Multi-Language Support
+
+Language Detection and Translation:
+
+AI will detect the language of the uploaded content.
+
+It will translate and grade papers written in regional languages.
+
+Supports Hindi, Marathi, Tamil, Telugu, etc.
+
+Feedback in Multiple Languages:
+
+Teachers can choose the language in which students receive feedback.
+
+Example:
+
+Question in Hindi → AI feedback in Hindi
+
+Teacher can toggle English feedback if preferred.
+
+✅ 3.Teacher’s Review Mode:
+
+Teachers can override AI grading and provide their own feedback.
+
+Toggle between:
+
+AI-graded feedback.
+
+Manually graded feedback.
+
+
+✅ 4. Automated Report Generation
+
+Classroom Performance Reports:
+
+Automatically generate weekly or monthly reports for each classroom.
+
+Includes:
+
+Average scores.
+
+Top-performing students.
+
+Areas where students struggle the most.
+
+Student Progress Reports:
+
+Individual reports for students with:
+
+Past performance trends.
+
+Areas for improvement.
+
+AI-suggested practice topics.
+
+Export Options:
+
+Downloadable in PDF or CSV format.
+
+Teachers can email reports to students or parents.
+
+✅ 5. Query System Enhancements
+
+Query Notifications:
+
+Real-time notifications for pending, resolved, or new queries.
+
+Teachers and students will see red notification badges for unresolved queries.
+
+Deadline Alerts:
+
+Query system will have deadline alerts for submissions or responses.
+
+Teachers can set response deadlines.
+
+Automatic reminders sent before the deadline.
+
+✅ 6. Cloud Storage Integration
+
+Google Drive and Dropbox Integration:
+
+Teachers can import files directly from Google Drive or Dropbox.
+
+Students can save their answer sheets to Drive after submission.
+
+Cloud Backup:
+
+Automatic backup of all data (QP, Answer Sheets, Graded Feedback) to Google Cloud Storage.
+
+Prevents data loss.
+
+✅ 7. Downloading and Exporting Features
+
+Downloadable Answer Sheets:
+
+Students can download their graded answer sheets with detailed AI feedback.
+
+Export Graded Papers:
+
+Teachers can export entire classroom’s answer sheets into a ZIP folder.
+
+Download all at once instead of individual downloads.
+
+Export Query History:
+
+Queries (pending/resolved) can be exported into a CSV file.
+
+
+✅ 8. Mobile App Extension
+
+Flutter-Based Mobile App:
+
+Once the web platform is complete, extend it into a mobile app.
+
+Features:
+
+Upload papers directly from the phone.
+
+AI grading and feedback on the go.
+
+Push notifications for grading completion and query updates.
+
+
+✅ 9. Video Grading
+
+Video Submissions:
+
+Students can submit video presentations or oral exams.
+
+AI will:
+
+Extract audio.
+
+Perform sentiment and content analysis

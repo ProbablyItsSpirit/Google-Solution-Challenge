@@ -69,7 +69,7 @@ async def get_user_data(uid: str):
     """Retrieve user data from Firestore."""
     user_ref = db.collection("users").document(uid)
     user_doc = user_ref.get()
-    if user_doc.exists:
+    if (user_doc.exists):
         return user_doc.to_dict()
     raise HTTPException(status_code=404, detail="User not found")
 
@@ -85,7 +85,7 @@ async def upload_question(file: UploadFile = File(...)):
 async def submit_answer(student_id: str, text_answer: str = None, audio_file: UploadFile = File(None)):
     """Submit student answer via text or speech."""
     audio_text = ""
-    if audio_file:
+    if (audio_file):
         audio_text = convert_audio_to_text(audio_file)
 
     answer_data = {
@@ -156,11 +156,11 @@ async def upload_file(file: UploadFile = File(...), file_type: str = Form(...)):
     """Handles file uploads for Question Papers, Student Answer Sheets, and Solution Sets."""
     contents = await file.read()
 
-    if file.filename.endswith(".pdf"):
+    if (file.filename.endswith(".pdf")):
         extracted_text = extract_text_from_pdf(contents)
-    elif file.filename.endswith(".docx"):
+    elif (file.filename.endswith(".docx")):
         extracted_text = extract_text_from_docx(contents)
-    elif file.filename.endswith((".png", ".jpg", ".jpeg")):
+    elif (file.filename.endswith((".png", ".jpg", ".jpeg"))):
         extracted_text = extract_text_from_image(contents)
     else:
         extracted_text = base64.b64encode(contents).decode("utf-8")  # Convert unknown files to Base64
@@ -182,7 +182,7 @@ async def upload_audio(file: UploadFile = File(...), student_id: str = Form(...)
     """
     # Get file extension and validate
     file_extension = file.filename.split(".")[-1].lower()
-    if file_extension not in ["wav", "mp3", "m4a"]:
+    if (file_extension not in ["wav", "mp3", "m4a"]):
         raise HTTPException(
             status_code=400, 
             detail="Unsupported audio format. Supported formats: WAV, MP3, M4A"
@@ -239,11 +239,11 @@ async def upload_answer_sheet(classroom_id: str, student_id: str, file: UploadFi
     contents = await file.read()
 
     # Process file (Extract text)
-    if file.filename.endswith(".pdf"):
+    if (file.filename.endswith(".pdf")):
         extracted_text = extract_text_from_pdf(contents)
-    elif file.filename.endswith(".docx"):
+    elif (file.filename.endswith(".docx")):
         extracted_text = extract_text_from_docx(contents)
-    elif file.filename.endswith((".png", ".jpg", ".jpeg")):
+    elif (file.filename.endswith((".png", ".jpg", ".jpeg"))):
         extracted_text = extract_text_from_image(contents)
     else:
         extracted_text = "Unsupported file format."
@@ -254,7 +254,15 @@ async def upload_answer_sheet(classroom_id: str, student_id: str, file: UploadFi
         "extracted_text": extracted_text
     })
 
-    return {"message": "Answer sheet uploaded!", "file_name": file.filename, "extracted_text": extracted_text[:500]}
+    # Call grade_answer_with_context function
+    grading_result = await grade_answer_with_context(file, assignment_id, student_id)
+
+    # Save grading details in Firestore
+    db.collection("classrooms").document(classroom_id).collection("exams").document("latest_exam").collection("answer_sheets").document(student_id).update({
+        "grading_result": grading_result
+    })
+
+    return {"message": "Answer sheet uploaded and graded!", "file_name": file.filename, "extracted_text": extracted_text[:500], "grading_result": grading_result}
 
 @router.get("/classroom/{classroom_id}/students")
 async def get_students(classroom_id: str):
@@ -271,6 +279,7 @@ class ChatMessage(BaseModel):
     student_id: str
 
 @router.post("/chat")
+@router.post("/api/chat")  # Add this additional route definition
 async def chat(chat_message: ChatMessage):
     """Handle chat messages with context and history."""
     try:
@@ -315,7 +324,7 @@ async def upload_question_paper(
             category="question_papers",
             assignment_id=assignment_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         return response
     except Exception as e:
@@ -339,7 +348,7 @@ async def upload_solution(
             category="solutions",
             assignment_id=assignment_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         return response
     except Exception as e:
@@ -365,8 +374,17 @@ async def upload_answer_sheet(
             assignment_id=assignment_id,
             student_id=student_id
         )
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
+
+        # Call grade_answer_with_context function
+        grading_result = await grade_answer_with_context(file, assignment_id, student_id)
+
+        # Save grading details in Firestore
+        db.collection("answer_sheets").document(file.filename).update({
+            "grading_result": grading_result
+        })
+
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -389,22 +407,17 @@ async def upload_book(
             category="books"
         )
         
-        if "error" in response:
+        if ("error" in response):
             raise HTTPException(status_code=400, detail=response["error"])
         
         # If requested, process the book for RAG
-        if process_for_rag and response.get("success"):
+        if (process_for_rag and response.get("success")):
             # You can add RAG processing here
             pass
             
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/chat")
-async def chat_endpoint(message: str):
-    # Call Gemini-based service logic
-    return process_chat(message)
 
 @router.post("/files")
 async def upload_file(fileType: str = Form(...), file: UploadFile = File(...)):
@@ -421,4 +434,202 @@ async def grade_answer(file: UploadFile = File(...), assignment_id: str = Form(.
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Add direct endpoint for /api/files to handle file uploads from the client
+@router.post("/api/files")
+async def api_files(fileType: str = Form(...), file: UploadFile = File(...)):
+    """
+    Endpoint to handle file uploads from the client-side uploadFileToBackend function.
+    Maps to the process_file service function.
+    """
+    try:
+        # Read file contents once
+        contents = await file.read()
+        
+        # Process the file based on its type
+        if file.filename.endswith((".pdf", ".doc", ".docx")):
+            extracted_text = extract_text_from_file(contents, file.filename)
+        elif file.filename.endswith((".jpg", ".jpeg", ".png")):
+            extracted_text = extract_text_from_image(contents)
+        else:
+            extracted_text = "Unsupported file format"
+            
+        # Store in Firestore for reference
+        doc_ref = db.collection("uploads").document()
+        doc_ref.set({
+            "file_name": file.filename,
+            "file_type": fileType,
+            "extracted_text": extracted_text[:5000] if extracted_text else "",
+            "upload_time": firestore.SERVER_TIMESTAMP
+        })
+        
+        return {
+            "success": True,
+            "message": f"File {file.filename} processed successfully",
+            "file_type": fileType,
+            "extracted_text_preview": extracted_text[:200] if extracted_text else ""
+        }
+    except Exception as e:
+        print(f"Error in api_files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
+# Fix the gradeAnswer endpoint to properly handle file streams
+@router.post("/gradeAnswer")
+async def grade_answer(file: UploadFile = File(...), assignment_id: str = Form(...), student_id: str = Form(...)):
+    """Endpoint to trigger grading of an answer paper."""
+    try:
+        print(f"Received grading request for file: {file.filename}")
+        print(f"Assignment ID: {assignment_id}, Student ID: {student_id}")
+        
+        # Read the file contents once
+        contents = await file.read()
+        
+        # Extract text from file
+        extracted_text = ""
+        if file.filename.endswith(".pdf"):
+            extracted_text = extract_text_from_pdf(contents)
+        elif file.filename.endswith((".doc", ".docx")):
+            extracted_text = extract_text_from_docx(contents)
+        elif file.filename.endswith((".jpg", ".jpeg", ".png")):
+            extracted_text = extract_text_from_image(contents)
+        else:
+            extracted_text = "Unsupported file format. Please upload PDF, DOC, DOCX, or images."
+        
+        print(f"Extracted text length: {len(extracted_text)} characters")
+        
+        # Return error if extraction failed
+        if not extracted_text:
+            return {"error": "Could not extract text from the file", "feedback": "Grading failed. Please upload a valid file."}
+        
+        # Get question paper and solution if available
+        # For simplicity, we'll use placeholder content
+        question_paper = "General question paper content"  # Replace with actual retrieval
+        solution = "General solution content"  # Replace with actual retrieval
+        
+        # Create grading prompt
+        prompt = f"""
+        You are an AI teacher grading a student assignment.
+        
+        Assignment context:
+        - Assignment ID: {assignment_id}
+        - Student ID: {student_id}
+        
+        Student's answer:
+        {extracted_text[:5000]}  # Limit text for Gemini
+        
+        Please provide a comprehensive assessment with the following:
+        1. Overall grade (out of 100)
+        2. Strengths and weaknesses
+        3. Detailed feedback on each section
+        4. Suggestions for improvement
+        """
+        
+        # Call Gemini model to generate feedback
+        genai_response = model.generate_content(prompt)
+        
+        # Save the grading result to Firestore
+        grading_result = {
+            "assignment_id": assignment_id,
+            "student_id": student_id,
+            "feedback": genai_response.text,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        }
+        
+        # Store in Firestore
+        db.collection("graded_assignments").add(grading_result)
+        
+        return {
+            "success": True,
+            "feedback": genai_response.text,
+            "file_processed": file.filename
+        }
+    except Exception as e:
+        print(f"Error in gradeAnswer: {str(e)}")
+        return {"error": str(e), "feedback": "Grading failed due to an unexpected error."}
+
+# Fix the upload/answer_sheet endpoint to avoid reading file stream twice
+@router.post("/upload/answer_sheet")
+async def upload_answer_sheet(
+    file: UploadFile = File(...),
+    assignment_id: str = Form(...),
+    student_id: str = Form(...)
+):
+    """
+    Uploads a Student's Answer Sheet and grades it.
+    - Requires assignment_id and student_id
+    - Supports PDF, DOC, DOCX, JPG, PNG formats
+    """
+    try:
+        # Read file content once
+        contents = await file.read()
+        
+        # Extract text from file based on type
+        if file.filename.endswith(".pdf"):
+            extracted_text = extract_text_from_pdf(contents)
+        elif file.filename.endswith((".doc", ".docx")):
+            extracted_text = extract_text_from_docx(contents)
+        elif file.filename.endswith((".jpg", ".jpeg", ".png")):
+            extracted_text = extract_text_from_image(contents)
+        else:
+            extracted_text = "Unsupported file format"
+        
+        # Store the file metadata and extracted text
+        doc_ref = db.collection("answer_sheets").document()
+        doc_ref.set({
+            "file_name": file.filename,
+            "student_id": student_id,
+            "assignment_id": assignment_id,
+            "extracted_text": extracted_text,
+            "upload_time": firestore.SERVER_TIMESTAMP
+        })
+        
+        # Create grading prompt
+        prompt = f"""
+        You are an AI teacher grading a student assignment.
+        
+        Assignment context:
+        - Assignment ID: {assignment_id}
+        - Student ID: {student_id}
+        
+        Student's answer:
+        {extracted_text[:5000]}  # Limit text for Gemini
+        
+        Please provide a comprehensive assessment with the following:
+        1. Overall grade (out of 100)
+        2. Strengths and weaknesses
+        3. Detailed feedback on each section
+        4. Suggestions for improvement
+        """
+        
+        # Call Gemini model to generate feedback
+        genai_response = model.generate_content(prompt)
+        
+        # Save the grading result
+        grading_result = {
+            "feedback": genai_response.text,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        }
+        
+        # Update the document with grading results
+        doc_ref.update({"grading_result": grading_result})
+        
+        return {
+            "success": True,
+            "message": "Answer sheet uploaded and graded successfully",
+            "feedback": genai_response.text,
+            "file_name": file.filename
+        }
+    except Exception as e:
+        print(f"Error in upload_answer_sheet: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Helper function to extract text from file based on extension
+def extract_text_from_file(contents, filename):
+    """Extract text from file based on extension."""
+    if filename.endswith(".pdf"):
+        return extract_text_from_pdf(contents)
+    elif filename.endswith((".doc", ".docx")):
+        return extract_text_from_docx(contents)
+    elif filename.endswith((".jpg", ".jpeg", ".png")):
+        return extract_text_from_image(contents)
+    else:
+        return "Unsupported file format"
