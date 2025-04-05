@@ -689,6 +689,11 @@ const TeacherDashboard = () => {
   const [isTyping, setIsTyping] = useState(false)
   const [typingText, setTypingText] = useState("")
   const [classes, setClasses] = useState([])
+  const [isGrading, setIsGrading] = useState(false);
+  const [gradingError, setGradingError] = useState(null);
+  const [gradingResult, setGradingResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [recentGrades, setRecentGrades] = useState([])
   const [selectedClass, setSelectedClass] = useState(null)
   const [viewMode, setViewMode] = useState("overview")
@@ -1679,19 +1684,50 @@ const TeacherDashboard = () => {
 
   const saveChatHistory = async (message, response) => {
     if (!auth.currentUser) return
-
+  
     try {
+      // Function to safely sanitize objects by removing File objects
+      const sanitizeForFirestore = (obj) => {
+        // Create a deep copy we can modify
+        const sanitized = { ...obj };
+        
+        // If the object has files property that contains File objects, replace with metadata
+        if (sanitized.files && Array.isArray(sanitized.files)) {
+          sanitized.files = sanitized.files.map(file => {
+            // If it's a File object
+            if (file instanceof File || (file && typeof file === 'object' && file.name && file.type)) {
+              return {
+                name: file.name,
+                type: file.type,
+                size: file.size || 0,
+                lastModified: file.lastModified || Date.now()
+              };
+            }
+            return file; // If it's already sanitized or is just a string path
+          });
+        }
+        
+        return sanitized;
+      };
+  
+      // Sanitize both message and response
+      const sanitizedMessage = sanitizeForFirestore(message);
+      const sanitizedResponse = sanitizeForFirestore(response);
+  
       const chatHistoryRef = collection(db, "teachers", auth.currentUser.uid, "chatHistory")
       const newChatEntry = {
         title: message.content.substring(0, 50) + (message.content.length > 50 ? "...": ""),
         time: new Date().toISOString(),
-        messages: [message, response],
+        messages: [sanitizedMessage, sanitizedResponse],
         createdAt: new Date(),
       }
+      
       await addDoc(chatHistoryRef, newChatEntry)
-
+  
       // Update local chat history
       setChatHistory((prev) => [newChatEntry, ...prev])
+      
+      console.log("Chat history saved successfully");
     } catch (error) {
       console.error("Error saving chat history:", error)
       showSnackbar("Failed to save chat history", "error")
@@ -3927,6 +3963,7 @@ const TeacherDashboard = () => {
             <Collapse in={chatHistoryOpen} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
                 {chatHistory.length > 0 ? (
+                  
                   chatHistory.map((chat, index) => (
                     <ListItem
                       key={index}
