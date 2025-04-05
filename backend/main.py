@@ -2,24 +2,18 @@ import os
 import json
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
-from routes import router as api_router
+from routes import router
 import firebase_admin
 from firebase_admin import credentials
 from auth import router as auth_router
-import uvicorn
-from config import HOST, PORT
 
-<<<<<<< Updated upstream
-app = FastAPI(title="GradeGood AI API", version="1.0.0")
-=======
 # Create FastAPI app
 app = FastAPI()
->>>>>>> Stashed changes
 
 # Model definitions
 class ChatMessage(BaseModel):
@@ -45,36 +39,11 @@ class AIResponse(BaseModel):
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
-    print("⚠️ GEMINI_API_KEY not found in .env file. Some features may not work.")
+    raise ValueError("❌ GEMINI_API_KEY is missing. Please check your .env file.")
 
-# Fix Firebase credential path - ensure it works on both Windows & Unix systems
+# Initialize Firebase Admin only once
 if not firebase_admin._apps:
     try:
-<<<<<<< Updated upstream
-        # Use os.path.join for cross-platform compatibility
-        import os
-        cred_path = os.path.join(os.path.dirname(__file__), "firebase-admin-sdk.json")
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        print(f"✅ Firebase initialized successfully with credentials at: {cred_path}")
-    except Exception as e:
-        print(f"❌ Error initializing Firebase: {str(e)}")
-        raise
-
-# Initialize Gemini model
-try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    print("✅ Gemini API configured")
-except Exception as e:
-    print(f"❌ Error configuring Gemini API: {str(e)}")
-    model = None
-
-# Fix CORS - Allow requests from the React app's domain
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # React app's domain
-=======
         # Make sure path is correct relative to where the app is started from
         cred = credentials.Certificate("backend/firebase-admin-sdk.json")
         firebase_admin.initialize_app(cred)
@@ -89,45 +58,20 @@ model = genai.GenerativeModel("gemini-1.5-pro")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"], 
->>>>>>> Stashed changes
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-<<<<<<< Updated upstream
-# Include API Routes - IMPORTANT FIX: Include all routes from the router directly
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-app.include_router(api_router)  # Register without prefix to allow proper route handling
-
-class UserInput(BaseModel):
-    prompt: str
-
-class AIResponse(BaseModel):
-    response: str
-
-=======
 # Basic home endpoint
->>>>>>> Stashed changes
 @app.get("/")
-async def root():
-    return {"message": "Welcome to GradeGood AI API", "status": "running"}
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "firebase": "initialized" if firebase_admin._apps else "not initialized",
-        "gemini": "configured" if model else "not configured"
-    }
+async def home():
+    return {"status": "API is running"}
 
 # Generate text endpoint
 @app.post("/generate", response_model=AIResponse)
 async def generate_text(input_data: UserInput):
     """Generate AI response using Gemini API."""
-    if not model:
-        raise HTTPException(status_code=503, detail="Gemini API not configured")
-        
     try:
         response = model.generate_content(
             input_data.prompt,
@@ -184,10 +128,5 @@ app.include_router(auth_router, prefix="/auth")
 
 # Server startup code
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    print(f"Starting server on port {PORT}")
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
-=======
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
->>>>>>> Stashed changes
