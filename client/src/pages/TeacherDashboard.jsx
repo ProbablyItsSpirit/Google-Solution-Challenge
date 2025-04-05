@@ -127,6 +127,40 @@ import {
   ViewModule as ViewModuleIcon,
 } from "@mui/icons-material"
 
+
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set up the worker using a string URL
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+
+const extractTextFromPDF = async (file) => {
+  try {
+    console.log("Extracting text from PDF:", file.name);
+    const fileData = await file.arrayBuffer();
+    
+    // Create a document loading task
+    const loadingTask = pdfjsLib.getDocument({data: fileData});
+    const pdf = await loadingTask.promise;
+    console.log(`PDF loaded successfully with ${pdf.numPages} pages`);
+    
+    let fullText = '';
+    
+    // Process each page
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += `Page ${i}:\n${pageText}\n\n`;
+    }
+    
+    console.log("PDF text extraction completed successfully");
+    return fullText;
+  } catch (error) {
+    console.error("Error extracting PDF text:", error);
+    // Return a fallback message that will be included in the chat
+    return `[Error extracting text from ${file.name}: ${error.message}]`;
+  }
+};
 // Animation keyframes
 const fadeIn = keyframes`
   from {
@@ -315,6 +349,20 @@ const ProgressIndicator = styled(LinearProgress)(({ theme, value }) => ({
   },
 }))
 
+const createMessageWithFiles = (content, files) => {
+  return {
+    content,
+    role: "user",
+    timestamp: new Date().toISOString(),
+    // Store only file metadata, not File objects
+    fileReferences: files.map(file => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      // You could add a download URL here if you upload to Storage first
+    }))
+  };
+};
 const TypingCursor = styled("span")(({ theme }) => ({
   display: "inline-block",
   width: "2px",
@@ -1347,7 +1395,25 @@ const TeacherDashboard = () => {
     setInputError("")
     return true
   }
-
+  const extractTextFromPDF = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += `Page ${i}:\n${pageText}\n\n`;
+      }
+      
+      return fullText;
+    } catch (error) {
+      console.error("Error extracting PDF text:", error);
+      return "Failed to extract text from PDF";
+    }
+  };
   // Process grading with AI
   const processGrading = async () => {
     try {
@@ -1448,10 +1514,10 @@ const TeacherDashboard = () => {
   const handleGradingRequest = () => {
     processGrading()
   }
-
+  
   const handleChatSubmit = async (e) => {
     e.preventDefault();
-  
+    
     if (!validateChatInput()) {
       return;
     }
@@ -1463,13 +1529,12 @@ const TeacherDashboard = () => {
       setInterimTranscript("");
     }
   
-    // Add user message
+    // First, create the userMessage object BEFORE using it
     const userMessage = {
       id: Date.now(),
-      content: chatInput,
-      role: "user",
-      files: uploadedFiles,
+      ...createMessageWithFiles(chatInput, uploadedFiles)
     };
+  
     setMessages((prev) => [...prev, userMessage]);
     setChatInput("");
     setUploadedFiles([]);
@@ -1480,9 +1545,44 @@ const TeacherDashboard = () => {
     setTypingText(""); // Clear any previous typing text
   
     try {
-      // Make API call to your backend
+      // Determine if this is a grading request - either explicit in text or implied by file uploads
+      const isGradingRequest = uploadedFiles.length > 0 && (
+        chatInput.toLowerCase().includes("grade") || 
+        chatInput.toLowerCase().includes("check") || 
+        chatInput.toLowerCase().includes("assess") ||
+        chatInput.toLowerCase().includes("evaluate") ||
+        // If no specific instruction but files are uploaded, assume grading
+        chatInput.trim() === ""
+      );
+  
+      // Build message combining text input and file info
+      let enhancedMessage = chatInput;
+      
+      if (uploadedFiles.length > 0) {
+        // Create descriptive information about files
+        const fileDescriptions = uploadedFiles.map(file => {
+          const sizeInKB = (file.size / 1024).toFixed(2);
+          return `- ${file.name} (${file.type}, ${sizeInKB} KB)`;
+        });
+        
+        // Add file descriptions to the message
+        enhancedMessage += `\n\nI've attached the following files:\n${fileDescriptions.join('\n')}\n\n`;
+        
+        // For grading requests, add specific instructions
+        if (isGradingRequest) {
+          enhancedMessage = enhancedMessage.trim() === "" ? 
+            "Please grade these files for me. Provide a detailed analysis of each answer, assign scores, and give feedback." : 
+            enhancedMessage;
+          
+          enhancedMessage += "\n\nPlease grade these files automatically. Identify correct and incorrect answers, assign scores, and provide detailed feedback.";
+        } else if (uploadedFiles.some(file => file.type === 'application/pdf')) {
+          enhancedMessage += "Please help me analyze these PDF files based on my request.\n\n";
+        }
+      }
+  
+      // Make API call with the combined message from all input sources
       const response = await axios.post(`${API_BASE_URL}/api/chat`, {
-        message: userMessage.content,
+        message: enhancedMessage,
         userId: auth.currentUser?.uid,
         files: uploadedFiles.length > 0 ? uploadedFiles.map(file => file.name) : [],
         history: messages.slice(-6) // Send last 6 messages for context
@@ -1514,8 +1614,12 @@ const TeacherDashboard = () => {
     } finally {
       setIsTyping(false);
       setTypingText("");
+      if (typeof setAiLoading === 'function') {
+        setAiLoading(false);
+      }
     }
-  }; 
+  };
+
   // Enhanced getAIResponse function that recognizes grading requests
   const getAIResponse = (input, files) => {
     // Check if this is a grading-related query
@@ -3963,7 +4067,7 @@ const TeacherDashboard = () => {
             <Collapse in={chatHistoryOpen} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
                 {chatHistory.length > 0 ? (
-                  
+
                   chatHistory.map((chat, index) => (
                     <ListItem
                       key={index}
