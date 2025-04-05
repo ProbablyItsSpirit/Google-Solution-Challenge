@@ -1,9 +1,20 @@
 "use client"
 
+<<<<<<< Updated upstream
 import { useEffect, useState, useRef } from "react"
 import { styled } from "@mui/material/styles"
 import {
   Box,
+=======
+import React, { useState, useEffect } from "react"
+import { getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory } from "../services/api"
+
+import { auth } from "../firebase"
+import { useNavigate } from "react-router-dom"
+import {
+  Box,
+  ListItemButton,
+>>>>>>> Stashed changes
   Typography,
   Button,
   Container,
@@ -44,8 +55,23 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+<<<<<<< Updated upstream
   Tooltip
 } from "@mui/material";
+=======
+  CircularProgress,
+  Tabs,
+  Tab,
+  Tooltip,
+  Collapse,
+  Snackbar,
+  Alert,
+  Switch,
+  FormControlLabel,
+  useMediaQuery,
+  Menu,
+} from "@mui/material"
+>>>>>>> Stashed changes
 import {
   Assignment,
   Grade,
@@ -62,6 +88,7 @@ import {
   School,
   CloudUpload,
   ArrowBack,
+<<<<<<< Updated upstream
   Mic as MicIcon,
   QuestionAnswer as QuestionIcon,
   Description as DescriptionIcon,
@@ -70,6 +97,41 @@ import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getUserData, getClasses, getAssignments, submitAssignment, sendChatMessage, getChatHistory, processChatMessage, uploadFileToBackend, gradeAnswerPaper } from '../services/api';
+=======
+  CalendarToday,
+  TrendingUp,
+  Person,
+  MoreVert,
+  Search,
+  FilterList,
+  Sort,
+  Refresh,
+  BarChart,
+  Timeline,
+  BookmarkBorder,
+  InsertDriveFile,
+  Close,
+  ExpandMore,
+  ExpandLess,
+  Help,
+  Settings,
+  Visibility,
+  AccessTime,
+  NotificationsActive,
+  NotificationsOff,
+  FilterAlt,
+  Download,
+  Add,
+  Description,
+  Folder,
+  FolderOpen,
+  Event,
+  Group,
+  CommentBank,
+} from "@mui/icons-material"
+import { styled } from "@mui/material/styles"
+import { motion, AnimatePresence } from "framer-motion"
+>>>>>>> Stashed changes
 
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -100,6 +162,7 @@ const PulseCircle = styled(Box)(({ theme }) => ({
       opacity: 0.6,
     },
   },
+<<<<<<< Updated upstream
 }));
 
 const StudentDashboard = () => {
@@ -135,6 +198,103 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [speechError, setSpeechError] = useState(null);
   const recognitionRef = useRef(null);
   const [interimTranscript, setInterimTranscript] = useState("");
+=======
+}))
+
+const GradientCard = styled(Card)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+  color: theme.palette.primary.contrastText,
+  transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+  "&:hover": {
+    transform: "translateY(-5px)",
+    boxShadow: theme.shadows[10],
+  },
+}))
+
+const AnimatedListItem = styled(ListItem)(({ theme }) => ({
+  transition: "all 0.2s ease-in-out",
+  "&:hover": {
+    backgroundColor: theme.palette.action.hover,
+    transform: "scale(1.02)",
+  },
+}))
+
+// Add new styled components for enhanced UI
+const ClassBanner = styled(Box)(({ theme }) => ({
+  height: 120,
+  borderRadius: theme.shape.borderRadius,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  position: "relative",
+  overflow: "hidden",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.6))",
+  },
+}))
+
+const StudentDashboard = () => {
+  const [user, setUser] = useState(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
+  const [selectedAssignment, setSelectedAssignment] = useState(null)
+
+  const [uploadsLoading, setUploadsLoading] = useState(false)
+  const [uploadsError, setUploadsError] = useState(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [selectedClass, setSelectedClass] = useState(null)
+  const [viewMode, setViewMode] = useState("overview")
+  const [chatMessages, setChatMessages] = useState([])
+  const [newMessage, setNewMessage] = useState("")
+  const [fileToUpload, setFileToUpload] = useState(null)
+  const [selectedClassId, setSelectedClassId] = useState("")
+  const [classes, setClasses] = useState([])
+  const [assignments, setAssignments] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false)
+  const [submittedFileName, setSubmittedFileName] = useState("")
+  const [submittedClassName, setSubmittedClassName] = useState("")
+  const [aiResponding, setAiResponding] = useState(false)
+  const [calendarView, setCalendarView] = useState(false)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success")
+  const [darkMode, setDarkMode] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(3)
+  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null)
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null)
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null)
+  const [sortAnchorEl, setSortAnchorEl] = useState(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [expandedAssignmentId, setExpandedAssignmentId] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "Assignment Graded",
+      message: "Your Math 101 assignment has been graded.",
+      time: "2 hours ago",
+      read: false,
+    },
+    { id: 2, title: "New Assignment", message: "New assignment added to Physics 202.", time: "1 day ago", read: false },
+    {
+      id: 3,
+      title: "Deadline Reminder",
+      message: "Computer Science 301 assignment due tomorrow.",
+      time: "3 days ago",
+      read: true,
+    },
+  ])
+>>>>>>> Stashed changes
 
   // Initialize speech recognition
   useEffect(() => {
@@ -144,6 +304,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
 
+<<<<<<< Updated upstream
       recognitionRef.current.onresult = (event) => {
         let interimText = "";
         let finalText = newMessage;
@@ -195,6 +356,12 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       setIsListening(true);
     }
   };
+=======
+  const navigate = useNavigate()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"))
+>>>>>>> Stashed changes
 
   // Load user data and fetch all required data
   useEffect(() => {
@@ -973,6 +1140,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
           )}
         </CardContent>
       </Card>
+<<<<<<< Updated upstream
     </Box>
   );
 
@@ -1060,6 +1228,60 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
               {aiResponding ? 'Sending...' : 'Send'}
             </Button>
           </Box>
+=======
+
+      <Card sx={{ boxShadow: 3 }}>
+        <CardHeader
+          title={
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <BarChart sx={{ mr: 1 }} />
+              <Typography variant="h6">Performance by Class</Typography>
+            </Box>
+          }
+        />
+        <CardContent>
+          {classes.map((classItem) => {
+            const classAssignments = assignments.filter((a) => a.classId === classItem.id && a.status === "graded")
+            const avgGrade =
+              classAssignments.length > 0
+                ? classAssignments.reduce((sum, a) => sum + a.grade, 0) / classAssignments.length
+                : 0
+
+            return (
+              <Box key={classItem.id} sx={{ mb: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    {classItem.name}
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                    {avgGrade > 0 ? `${avgGrade.toFixed(1)}/100` : "No grades"}
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={avgGrade}
+                  sx={{
+                    height: 10,
+                    borderRadius: 5,
+                    bgcolor: "background.paper",
+                    "& .MuiLinearProgress-bar": {
+                      borderRadius: 5,
+                      bgcolor: avgGrade >= 90 ? "success.main" : avgGrade >= 70 ? "warning.main" : "error.main",
+                    },
+                  }}
+                />
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {classAssignments.length} graded assignments
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {classAssignments.length > 0 ? `Highest: ${Math.max(...classAssignments.map((a) => a.grade))}` : ""}
+                  </Typography>
+                </Box>
+              </Box>
+            )
+          })}
+>>>>>>> Stashed changes
         </CardContent>
       </Card>
     </Box>
@@ -1195,6 +1417,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       default:
         return renderDashboardTab();
     }
+<<<<<<< Updated upstream
   };
 
   const drawerWidth = 240;
@@ -1230,13 +1453,209 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     </Box>
   </Toolbar>
 </AppBar>
+=======
+  }
+
+  return (
+    <Box sx={{ display: "flex" }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          boxShadow: 3,
+        }}
+      >
+        <Toolbar>
+          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
+            <MenuIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+              textShadow: "1px 1px 2px rgba(0,0,0,0.2)",
+            }}
+          >
+            GradeGood
+          </Typography>
+
+          <Tooltip title="Refresh Data">
+            <IconButton color="inherit" onClick={handleRefresh}>
+              <Refresh sx={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Notifications">
+            <IconButton color="inherit" onClick={handleNotificationsClick}>
+              <Badge badgeContent={notificationCount} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+          <Menu
+            anchorEl={notificationsAnchorEl}
+            open={Boolean(notificationsAnchorEl)}
+            onClose={handleNotificationsClose}
+            PaperProps={{
+              sx: { width: 320, maxHeight: 500, mt: 1.5 },
+            }}
+          >
+            <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Typography variant="h6">Notifications</Typography>
+              <Box>
+                <Button size="small" onClick={handleMarkAllNotificationsAsRead} sx={{ mr: 1 }}>
+                  Mark all read
+                </Button>
+                <IconButton size="small" onClick={handleClearNotifications}>
+                  <Close fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+            <Divider />
+            {notifications.length > 0 ? (
+              <List sx={{ p: 0 }}>
+                {notifications.map((notification) => (
+                  <ListItem
+                    key={notification.id}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      bgcolor: notification.read ? "transparent" : "action.hover",
+                      borderLeft: notification.read ? "none" : "3px solid",
+                      borderColor: "primary.main",
+                    }}
+                  >
+                    <ListItemText
+                      primary={<Typography variant="subtitle2">{notification.title}</Typography>}
+                      secondary={
+                        <>
+                          <Typography variant="body2" color="text.secondary">
+                            {notification.message}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {notification.time}
+                          </Typography>
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Box sx={{ p: 3, textAlign: "center" }}>
+                <NotificationsOff sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+                <Typography color="text.secondary">No notifications</Typography>
+              </Box>
+            )}
+          </Menu>
+
+          <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+            <IconButton color="inherit" onClick={handleUserMenuClick} sx={{ p: 0 }}>
+              <StyledBadge overlap="circular" anchorOrigin={{ vertical: "bottom", horizontal: "right" }} variant="dot">
+                <Avatar
+                  src={user?.photoURL}
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    border: "2px solid white",
+                  }}
+                />
+              </StyledBadge>
+            </IconButton>
+            <Typography variant="body1" sx={{ ml: 1, display: { xs: "none", sm: "block" } }}>
+              {user?.displayName}
+            </Typography>
+          </Box>
+          <Menu
+            anchorEl={userMenuAnchorEl}
+            open={Boolean(userMenuAnchorEl)}
+            onClose={handleUserMenuClose}
+            PaperProps={{
+              sx: { width: 220, mt: 1.5 },
+            }}
+          >
+            <Box sx={{ p: 2, textAlign: "center" }}>
+              <Avatar
+                src={user?.photoURL}
+                sx={{
+                  width: 60,
+                  height: 60,
+                  margin: "0 auto",
+                  mb: 1,
+                  border: "2px solid",
+                  borderColor: "primary.main",
+                }}
+              />
+              <Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
+                {user?.displayName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+            <Divider />
+            <MenuItem
+              onClick={() => {
+                handleUserMenuClose()
+                setProfileDialogOpen(true)
+              }}
+            >
+              <ListItemIcon>
+                <Person fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Profile</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleUserMenuClose()
+                setSettingsDialogOpen(true)
+              }}
+            >
+              <ListItemIcon>
+                <Settings fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Settings</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleUserMenuClose()
+                setHelpDialogOpen(true)
+              }}
+            >
+              <ListItemIcon>
+                <Help fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Help & Support</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <Logout fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+>>>>>>> Stashed changes
       <Drawer
         variant="temporary"
         open={drawerOpen}
         onClose={handleDrawerToggle}
         sx={{
+<<<<<<< Updated upstream
           width: drawerWidth,
           '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
+=======
+          width: 250,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
+          display: { xs: "block", sm: "block", md: "none" },
+>>>>>>> Stashed changes
         }}
       >
         {drawer}
@@ -1244,9 +1663,16 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
       <Drawer
         variant="permanent"
         sx={{
+<<<<<<< Updated upstream
           width: drawerWidth,
           display: { xs: 'none', sm: 'block' },
           '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
+=======
+          width: 250,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: { width: 250, boxSizing: "border-box" },
+          display: { xs: "none", sm: "none", md: "block" },
+>>>>>>> Stashed changes
         }}
         open
       >

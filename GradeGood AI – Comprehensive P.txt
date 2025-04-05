@@ -1,235 +1,220 @@
-# 🚀 **GradeGood AI – Comprehensive Project Features & Functionality**
+# 🚀 GradeGood AI – Comprehensive Project Plan
 
 ---
 
-### ✅ **💡 Project Name:** `GradeGood AI`
-### 🔥 **Purpose:**  
-An AI-powered **grading and feedback system** designed for educational institutions. It offers **automated grading, feedback, and content retrieval** with **RAG (Retrieval-Augmented Generation)** functionality. The system is accessible through a **Flutter or React.js frontend** with a **FastAPI + Python backend**.
+## ✅ 💡 Project Name: `GradeGood AI`
+### 🔥 Purpose:
+An AI-powered **grading and feedback system** for educational institutions. Provides **automated grading, contextual feedback, classroom management,** and **RAG (Retrieval-Augmented Generation)** integration. Built using **FastAPI + Firebase + Gemini AI + FAISS**, accessible via **Flutter or React.js frontend**.
 
 ---
 
-## ⚡️ **🛠️ Core Features Implemented**
----
+## 🛠️ Core Features
 
-### ✅ **1. Google Account Authentication**
-- **Student & Teacher Login:**  
-   - **Google OAuth2 Authentication** for secure login.  
-   - Separate **Teacher and Student roles**.
-- **Why Important:**  
-   - Faster, more secure, and no need for custom authentication handling.  
-   - Allows easy integration with other Google services.  
+### ✅ 1. Authentication
+- Google OAuth2 Login
+- Separate roles: `Student`, `Teacher`
 
----
+### ✅ 2. User Roles & Dashboards
+- **Student Dashboard**:
+  - View submitted assignments, grades, analytics
+  - Access to feedback and past submissions
+  - AI query chatbox
 
-### ✅ **2. User Roles & Dashboard**
-- **Student Dashboard:**
-   - Displays **uploaded assignments, grades, and feedback**.  
-   - Access to **past performances**.  
-   - View detailed **question-by-question feedback**.  
-   - Track improvement history with visual analytics.  
-   - **Chat functionality** to ask AI queries.  
+- **Teacher Dashboard**:
+  - Class management (create/join/delete classrooms)
+  - Upload assignments and question papers
+  - View all student answer sheets and grade
+  - Export student reports
+  - Analyze student improvement
 
-- **Teacher Dashboard:**
-   - Button to access **Classroom Management**.  
-   - View all **past question papers**, solutions, and student performances.  
-   - **Detailed analytics** of students' scores and overall class performance.  
-   - Export/download **student reports**.  
-   - Manage and grade new student submissions.  
-   - **Edit & update grades**.  
-   - **RAG-powered Question Search:**  
-     - Search any question from previous papers with reference to books and past solutions.
+### ✅ 3. Smart File Upload System
+- 3 Input Tabs:
+  - `QP` – Question Paper Upload
+  - `SP` – Solution Set/Book Upload
+  - `AP` – Answer Sheet Upload
 
----
+- Supported Formats:
+  - `PDF, DOCX, TXT, Images (OCR), Audio (MP3, WAV)`
 
-### ✅ **3. File Upload & RAG-Driven Processing**
+### ✅ 4. RAG-Driven Grading Engine
+- Uses Gemini + FAISS for similarity search
+- Uses solution/book content as reference for grading
+- Scenarios:
+  - Only QP → Generate solutions
+  - QP + Answer Sheet → Grade with/without book
+  - Only Answer Sheet → Ask for QP if needed
+  - Only Solution → Saved for future use
 
-**Three Fixed Tabs for Input Files (Above Chat Box)**  
-📌 **Top Section with 3 Input Tabs:**  
-- ✅ **(QP)** – **Question Paper/Assignment** Upload  
-- ✅ **(SP)** – **Solution Set/Book** Upload  
-- ✅ **(AP)** – **Answer Sheet/s** Upload  
+### ✅ 5. Detailed Grading & Feedback
+- Per-question feedback:
+  - Correctness
+  - Missing points
+  - Suggestions
+  - Referenced book page (if provided)
+- Mark customization by teacher
 
-**File Formats Supported:**  
-- **DOCX, PDF, TXT, Images, Audio**  
-- Text Extraction + OCR for images.  
-- Audio files are transcribed into text using Gemini's speech-to-text capabilities.
+### ✅ 6. Audio-To-Text Support
+- Audio answers/questions are transcribed
+- Supported formats: `.mp3`, `.wav`, `.m4a`
 
----
+### ✅ 7. History & Memory
+- Students can see performance history
+- Teachers can analyze class improvements
 
-### ✅ **4. File Management & Firestore Integration**
-- All uploaded files and metadata are saved to **Firestore & Firebase Storage**.  
-- **File relationships:**  
-   - Each uploaded file links to the **respective user (teacher or student)**.  
-   - Stored with metadata for **retrieval and version control**.
+### ✅ 8. Chat Assistant (AI)
+- Context-aware queries
+- Based on uploaded materials
+- Explains answers & generates solutions
 
----
+### ✅ 9. Notifications
+- Students notified if a new assignment or grade is uploaded
 
-### ✅ **5. RAG (Retrieval-Augmented Generation)**
-- **Books + Question Paper:**  
-   - Retrieves **relevant book passages** to answer the question.  
-- **Question Paper + Answer Sheet:**  
-   - Grades answers based on **AI knowledge**.  
-   - Provides **feedback and corrections**.  
-- **Question Paper + Solution + Answer Sheet:**  
-   - Grades based on both the **book content** and AI knowledge.  
-   - Gives **contextual feedback** with book references.  
-- **Answer Sheet Alone:**  
-   - Grades using **AI’s general knowledge**.  
+### ✅ 10. Settings
+- Dark/Light/Blue Themes
+- Text Size
+- Text-To-Speech (AI voice reads answers)
 
 ---
 
-### ✅ **6. Grading & Feedback**
-- **AI-powered grading system**:
-   - Uses **FAISS indexing** to compare answer sheets to model answers.  
-   - Provides **detailed feedback** on each question:  
-     - Correctness  
-     - Missing points  
-     - Suggestions for improvement  
+## 🔥 Frontend Layout Suggestions
 
-- **Customizable grading scheme**:  
-   - Teachers can specify the **marks per question**.  
-   - Automatic grade calculation.  
+### ✅ Navbar Tabs
+- `Classroom`
+- `AI Assistant`
+- `Notifications`
+- `Settings`
 
-- **Detailed feedback format:**  
-   - AI suggests how to **improve the answer**.  
-   - References **relevant book pages** (if available).  
-   - Clear, step-by-step explanations for better learning.  
+### ✅ Chat Assistant UI
+- Pill-shaped chatbox
+- Text + Audio Input
+- Upload tabs above chatbox (QP, SP, AP)
 
----
+### ✅ Classroom Tab UI
+- Class Performance Summary
+- Teacher Upload Center (Assignments/QPs)
+- Student Upload (Answer Sheets only visible to teacher)
+- Query Portal (Doubts)
+- Class Join via Code/Link
 
-### ✅ **7. Audio-to-Text + AI Response**
-- Upload audio questions → Automatically transcribed.  
-- AI generates solutions or provides feedback based on transcribed text.  
-- **Supports M4A, MP3, and WAV formats**.  
-
----
-
-### ✅ **8. Error Handling & Logging**
-- **Detailed error logging:**  
-   - Firebase and FastAPI errors are logged.  
-   - Clear feedback on why uploads or grading may fail.  
-- **User-friendly error messages:**  
-   - Error details displayed properly in the frontend.  
+### ✅ Sidebar Navigation
+- Dashboard
+- Chat History
+- Settings
+- Log Out
 
 ---
 
-### ✅ **9. AI-Powered Answer Generation**
-- **Gemini AI response:**  
-   - Generates solutions, explanations, and suggestions.  
-   - Provides clear, structured, and understandable feedback.  
-- **Context-aware RAG integration:**  
-   - AI checks for relevant passages in books before generating solutions.  
-   - Improved accuracy and contextual answers.  
+## 🔧 Firestore Database Structure
+
+### Users Collection:
+```json
+/users/{userId} {
+  name: "Shardul",
+  email: "abc@gmail.com",
+  role: "student" | "teacher",
+  classrooms: ["classroomId1", "classroomId2"]
+}
+```
+
+### Classrooms Collection:
+```json
+/classrooms/{classroomId} {
+  className: "Grade 10 Physics",
+  createdBy: "teacherUserId",
+  joinCode: "X5Y7Z",
+  students: ["userId1", "userId2"],
+  assignments: ["assignmentId1", "assignmentId2"]
+}
+```
+
+### Assignments Collection:
+```json
+/assignments/{assignmentId} {
+  classroomId: "classroomId",
+  qpUrl: "url_to_question_paper",
+  spUrl: "url_to_solution",
+  createdAt: timestamp
+}
+```
+
+### Submissions Collection:
+```json
+/submissions/{submissionId} {
+  assignmentId: "assignmentId",
+  studentId: "userId",
+  answerUrl: "url_to_answer_sheet",
+  marksPerQuestion: [2, 4, 3, 5],
+  gradingResult: {
+    totalScore: 18,
+    maxScore: 20,
+    feedback: [
+      { q: 1, correct: true, remarks: "Well explained", refPage: 34 },
+      { q: 2, correct: false, remarks: "Missed formula", refPage: 12 }
+    ]
+  },
+  timestamp: timestamp
+}
+```
 
 ---
 
-### ✅ **10. File Retrieval & History**
-- Teachers can access **previously uploaded question papers**.  
-- Retrieve **past student submissions**.  
-- Generate reports on **student improvement over time**.  
+## 🌐 FastAPI Endpoint Blueprint
+
+### 🔹 Auth
+```http
+POST /auth/google-login
+```
+- Exchange OAuth2 token
+- Return JWT and user info
+
+### 🔹 Uploads
+```http
+POST /upload/question-paper
+POST /upload/solution-book
+POST /upload/answer-sheet
+```
+
+### 🔹 Grading
+```http
+POST /grade
+Request Body:
+{
+  "assignmentId": "xyz",
+  "studentId": "abc"
+}
+Response:
+{
+  "totalScore": 18,
+  "feedback": [ ... ],
+  "referencePages": [12, 34]
+}
+```
+
+### 🔹 Classroom
+```http
+POST /classroom/create
+POST /classroom/join
+GET /classroom/{id}/students
+```
+
+### 🔹 AI Chat
+```http
+POST /chat/query
+Request:
+{
+  "userId": "abc",
+  "message": "What is the answer to Q3?",
+  "contextFiles": ["qp", "book"]
+}
+Response:
+{
+  "reply": "Here is the answer with explanation...",
+  "source": "Book page 21"
+}
+```
 
 ---
 
-### ✅ **📌 Different Scenarios & AI Behavior:**
----
+## 💎 Final Thoughts
+GradeGood AI is a next-gen grading platform combining **AI + RAG + cloud storage** to revolutionize classroom learning, assignments, and assessments. Scalable, intuitive, and powerful.
 
-### **1️⃣ If you upload only the Question Paper (QP)**  
-✅ AI will generate answers for each question.  
-✅ If a book is uploaded, AI will **pull answers from it** instead of making them up.  
-
----
-
-### **2️⃣ If you upload QP + Answer Sheet**  
-✅ AI will **grade your answers** based on its own knowledge.  
-✅ If a solution set/book exists, AI will use that as a reference instead (**better accuracy**).  
-✅ AI will highlight mistakes, explain correct answers, and suggest improvements.  
-
----
-
-### **3️⃣ If you upload only the Answer Sheet**  
-✅ AI will **try to understand the questions** from the answers themselves.  
-✅ If it can’t, it will ask for a **Question Paper** to grade properly.  
-✅ If a solution set/book is available, it will use that to check correctness.  
-
----
-
-### **4️⃣ If you upload only a Solution Set/Book**  
-✅ AI saves it and will **use it in future grading** (instead of making up answers).  
-✅ Works like a **reference manual** for all assignments & exams.  
-
----
-
-### **5️⃣ If no marks are provided**  
-✅ AI will ask you to **input marks per question** so it can grade accurately.  
-✅ If marks are missing, AI will **try to estimate difficulty** & grade based on that.  
-
----
-
-## ✅ **🧠 Advanced Features:**
-
----
-
-### 🔥 **1. Understands Different Input Types**
-- **Text answers** (typed in chat)  
-- **Handwritten answers** (scanned images)  
-- **Audio answers** (converts speech to text & grades it)  
-
----
-
-### 🔥 **2. Suggests Better Answers**
-- AI will show the **best way to write the answer** for better marks.  
-- It will say **what’s missing, what’s extra, and how to improve it**.  
-
----
-
-### 🔥 **3. Memory & Student Tracking**
-- **Saves past answers & feedback** so students can track progress.  
-- Teachers can see who’s improving and who needs help.  
-
----
-
-### ✅ **🔥 Frontend Layout**
----
-
-### 📌 **Top Section:**
-- **Three Input Tabs Above Chat Box:**  
-   - `QP (Question Paper)`  
-   - `SP (Solution Set/Book)`  
-   - `AP (Answer Sheet)`  
-
-### 📌 **Main Section:**
-- **Chat Box:**  
-   - Allows text-based queries.  
-   - Displays AI feedback and explanations.  
-
-### 📌 **Sidebar Navigation:**
-- **Dashboard**  
-- **Upload Section**  
-- **Classroom (For Teachers)**  
-- **Past Assignments & Performance Tracking**  
-
----
-
-### ✅ **💡 Why GradeGood AI Stands Out?**
-- **Seamless & Efficient Grading:**  
-   - RAG + AI ensures accurate, context-aware grading.  
-- **User-Friendly UI:**  
-   - Simple, intuitive interface for both teachers and students.  
-- **Real-time Performance Insights:**  
-   - Teachers can track performance over time.  
-- **Highly Scalable:**  
-   - Firebase + Firestore backend ensures scalability for **large classrooms**.  
-
----
-
-### ✅ **🔥 Final GradeGood AI Tech Stack:**
-- **Backend:** Python (FastAPI), Firebase, Firestore  
-- **Frontend:** Flutter or React.js (Google Cloud Dev)  
-- **Core Tech:** FAISS for RAG, Gemini AI, Firebase Storage  
-- **Authentication:** Google OAuth2  
-- **File Handling:** DOCX, PDF, TXT, Images, Audio  
-- **User Roles:** Teacher & Student  
-
----
-
-🔥 **🚀 GradeGood AI – A powerful, AI-driven grading and classroom management system!** 🚀
