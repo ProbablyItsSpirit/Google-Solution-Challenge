@@ -15,6 +15,16 @@ from auth import router as auth_router
 # Create FastAPI app
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://gg-f.vercel.app",  # Update with your frontend URL
+        "http://localhost:5173",  # For local development
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Model definitions
 class ChatMessage(BaseModel):
     content: str
@@ -54,14 +64,6 @@ if not firebase_admin._apps:
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-pro")
 
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"], 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Basic home endpoint
 @app.get("/")

@@ -8,7 +8,7 @@ on:
       - 'backend/**'
 
 env:
-  PROJECT_ID: your-project-id-here  # Replace this with your GCP project ID
+  PROJECT_ID: solutionchallenge-e876c  # Replace this with your GCP project ID
   SERVICE_NAME: gradegood-api
   REGION: us-central1
 
