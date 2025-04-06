@@ -57,8 +57,36 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {'storageBucket': 'solutionchallenge-e876c.appspot.com'})
 
 # ✅ Initialize Firestore & Storage
+# ...existing Firebase initialization code...
+
+# ✅ Initialize Firestore & Storage
 db = firestore.client()
 bucket = storage.bucket()
+
+# Vector similarity service (replacing FAISS)
+class VectorService:
+    def __init__(self, dimension: int = 768):
+        self.dimension = dimension
+        self.vectors = []
+        self.metadata = []
+
+    def add_vectors(self, vectors: List[np.ndarray], metadata: List[Dict[str, Any]] = None):
+        self.vectors.extend(vectors)
+        if metadata:
+            self.metadata.extend(metadata)
+
+    def search(self, query: np.ndarray, k: int = 1) -> tuple[List[int], List[float]]:
+        if not self.vectors:
+            return [], []
+        vectors = np.array(self.vectors)
+        similarities = np.dot(vectors, query)
+        indices = np.argsort(similarities)[-k:][::-1]
+        return indices.tolist(), similarities[indices].tolist()
+
+# Initialize vector service
+vector_service = VectorService()
+
+# ...rest of your existing code...
 
 ### 📌 Upload Function (Handles PDFs & Images) ###
 def upload_file(file_bytes, file_name, category, assignment_id=None, student_id=None):
