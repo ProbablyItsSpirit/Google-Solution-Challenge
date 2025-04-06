@@ -19,7 +19,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://gg-f.vercel.app",  # Update with your frontend URL
-        "http://localhost:5173",  # For local development
+        "http://localhost:5173", 
+        "https://google-solution-challenge-927958129805.us-central1.run.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
